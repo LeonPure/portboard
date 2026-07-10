@@ -1,0 +1,75 @@
+"""Immutable, dependency-free models for a local-service snapshot."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+
+
+class Transport(str, Enum):
+    """Network transports supported by the first discovery release."""
+
+    TCP = "tcp"
+
+
+@dataclass(frozen=True, slots=True)
+class Listener:
+    """A local socket that is accepting connections."""
+
+    host: str
+    port: int
+    transport: Transport = Transport.TCP
+    pid: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ProcessInfo:
+    """Best-effort process metadata associated with a listener."""
+
+    pid: int
+    name: str | None
+    command: str | None
+    cwd: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class ProjectInfo:
+    """The Git project that contains a process working directory."""
+
+    name: str
+    root: str
+
+
+@dataclass(frozen=True, slots=True)
+class Service:
+    """One discovered local service and the metadata available for it."""
+
+    listener: Listener
+    process: ProcessInfo | None = None
+    project: ProjectInfo | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ScanWarning:
+    """A non-fatal issue encountered while producing a snapshot."""
+
+    code: str
+    message: str
+
+
+@dataclass(frozen=True, slots=True)
+class ListenerScan:
+    """Listeners a system adapter could read, plus adapter-level warnings."""
+
+    listeners: tuple[Listener, ...]
+    warnings: tuple[ScanWarning, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ServiceSnapshot:
+    """The complete result of one discovery operation."""
+
+    observed_at: datetime
+    services: tuple[Service, ...]
+    warnings: tuple[ScanWarning, ...]

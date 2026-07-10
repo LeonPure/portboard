@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "portboard"
+version = "0.0.0"
+description = "A terminal dashboard for local development services"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [
+  { name = "LeonPure" },
+]
+classifiers = [
+  "Development Status :: 1 - Planning",
+  "Environment :: Console",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Software Development",
+  "Topic :: System :: Monitoring",
+]
+dependencies = [
+  "psutil>=7.0",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/LeonPure/portboard"
+Repository = "https://github.com/LeonPure/portboard"
+Issues = "https://github.com/LeonPure/portboard/issues"
+
+[project.scripts]
+portboard = "portboard.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/portboard"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
