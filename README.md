@@ -31,6 +31,9 @@ Keyboard shortcuts in the dashboard:
   the termination request.
 - `q`: quit.
 
+HTTP listeners display their response status and probe latency; other TCP
+listeners remain visible with a `listening` status and no latency value.
+
 The same discovery snapshot is also available as versioned JSON output for
 scripts and bug reports:
 

@@ -138,7 +138,15 @@ class PortBoardApp(App[None]):
     def on_mount(self) -> None:
         """Configure the table and start the first scan after mounting."""
         table = self.query_one("#services", DataTable)
-        table.add_columns("Project", "Port", "Status", "Process", "Command", "Endpoint")
+        table.add_columns(
+            "Project",
+            "Port",
+            "Status",
+            "Latency",
+            "Process",
+            "Command",
+            "Endpoint",
+        )
         table.cursor_type = "row"
         table.zebra_stripes = True
         table.focus()
@@ -229,6 +237,7 @@ class PortBoardApp(App[None]):
                 service.project.name if service.project is not None else "—",
                 str(service.listener.port),
                 _status(service),
+                _latency(service),
                 service.process.name if service.process and service.process.name else "—",
                 service.process.command if service.process and service.process.command else "—",
                 _endpoint(service),
@@ -321,6 +330,13 @@ def _status(service: Service) -> str:
         return "listening"
     label = "healthy" if service.health.status is HealthStatus.HEALTHY else "unhealthy"
     return f"{label} ({service.health.status_code})"
+
+
+def _latency(service: Service) -> str:
+    """Render HTTP probe latency only when a service responded to the probe."""
+    if service.health is None:
+        return "—"
+    return f"{service.health.latency_ms:.1f} ms"
 
 
 def _service_key(service: Service) -> str:

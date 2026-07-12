@@ -78,7 +78,9 @@ def test_dashboard_filters_and_sorts_the_discovered_services() -> None:
             assert table.row_count == 2
             assert table.get_row_at(0)[1] == "3000"
             assert table.get_row_at(0)[2] == "healthy (200)"
-            assert table.get_row_at(0)[5] == "http://[::1]:3000"
+            assert table.get_row_at(0)[3] == "3.2 ms"
+            assert table.get_row_at(0)[6] == "http://[::1]:3000"
+            assert table.get_row_at(1)[3] == "—"
 
             filter_input = app.query_one("#filter", Input)
             filter_input.value = "uvicorn"
