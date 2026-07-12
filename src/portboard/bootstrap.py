@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from portboard.adapters.http.httpx_probe import HttpxServiceProbe
 from portboard.adapters.project.git_resolver import GitProjectResolver
 from portboard.adapters.system.psutil_scanner import PsutilListenerScanner
 from portboard.application.discover import DiscoverServices
@@ -12,4 +13,5 @@ def build_discover_services() -> DiscoverServices:
     return DiscoverServices(
         scanner=PsutilListenerScanner(),
         project_resolver=GitProjectResolver(),
+        service_probe=HttpxServiceProbe(),
     )

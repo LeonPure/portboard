@@ -9,7 +9,7 @@ from typing import Protocol
 from textual.app import App, ComposeResult
 from textual.widgets import DataTable, Footer, Header, Input, Static
 
-from portboard.domain.models import Service, ServiceSnapshot
+from portboard.domain.models import HealthStatus, Service, ServiceSnapshot
 
 
 class ServiceDiscoverer(Protocol):
@@ -133,7 +133,7 @@ class PortBoardApp(App[None]):
             table.add_row(
                 service.project.name if service.project is not None else "—",
                 str(service.listener.port),
-                "listening",
+                _status(service),
                 service.process.name if service.process and service.process.name else "—",
                 service.process.command if service.process and service.process.command else "—",
                 _endpoint(service),
@@ -192,11 +192,20 @@ def _sort_key(service: Service, field: str) -> tuple[str, int]:
 
 
 def _endpoint(service: Service) -> str:
-    """Format a TCP endpoint without assuming that every listener is HTTP."""
+    """Format a TCP endpoint, including a URL when HTTP was identified."""
     host = service.listener.host
     if ":" in host and not host.startswith("["):
         host = f"[{host}]"
-    return f"{host}:{service.listener.port}"
+    endpoint = f"{host}:{service.listener.port}"
+    return f"http://{endpoint}" if service.health and service.health.protocol == "http" else endpoint
+
+
+def _status(service: Service) -> str:
+    """Render the best available service status without inventing HTTP health."""
+    if service.health is None:
+        return "listening"
+    label = "healthy" if service.health.status is HealthStatus.HEALTHY else "unhealthy"
+    return f"{label} ({service.health.status_code})"
 
 
 def _service_key(service: Service) -> str:

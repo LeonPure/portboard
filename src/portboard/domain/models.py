@@ -13,6 +13,13 @@ class Transport(str, Enum):
     TCP = "tcp"
 
 
+class HealthStatus(str, Enum):
+    """The availability state returned by a service health probe."""
+
+    HEALTHY = "healthy"
+    UNHEALTHY = "unhealthy"
+
+
 @dataclass(frozen=True, slots=True)
 class Listener:
     """A local socket that is accepting connections."""
@@ -42,12 +49,24 @@ class ProjectInfo:
 
 
 @dataclass(frozen=True, slots=True)
+class HealthInfo:
+    """A successful HTTP response observed while checking a service."""
+
+    protocol: str
+    status: HealthStatus
+    status_code: int
+    latency_ms: float
+    checked_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
 class Service:
     """One discovered local service and the metadata available for it."""
 
     listener: Listener
     process: ProcessInfo | None = None
     project: ProjectInfo | None = None
+    health: HealthInfo | None = None
 
 
 @dataclass(frozen=True, slots=True)

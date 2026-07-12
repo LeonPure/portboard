@@ -3,7 +3,14 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from portboard.application.discover import DiscoverServices
-from portboard.domain.models import Listener, ListenerScan, ProcessInfo, ProjectInfo
+from portboard.domain.models import (
+    HealthInfo,
+    HealthStatus,
+    Listener,
+    ListenerScan,
+    ProcessInfo,
+    ProjectInfo,
+)
 
 
 class FakeScanner:
@@ -71,3 +78,40 @@ def test_discovery_turns_project_failures_into_warnings() -> None:
         "project-lookup-failed",
         "process-unavailable",
     ]
+
+
+def test_discovery_enriches_a_service_with_http_health() -> None:
+    health = HealthInfo(
+        protocol="http",
+        status=HealthStatus.HEALTHY,
+        status_code=200,
+        latency_ms=4.2,
+        checked_at=datetime(2026, 7, 12, tzinfo=UTC),
+    )
+
+    class FakeProbe:
+        def probe(self, listener: Listener) -> HealthInfo | None:
+            return health if listener.port == 3000 else None
+
+    snapshot = DiscoverServices(
+        scanner=FakeScanner(),
+        project_resolver=FakeProjectResolver(),
+        service_probe=FakeProbe(),
+    ).execute()
+
+    assert snapshot.services[0].health == health
+
+
+def test_discovery_turns_probe_failures_into_warnings() -> None:
+    class BrokenProbe:
+        def probe(self, listener: Listener) -> HealthInfo | None:
+            raise OSError("probe temporarily unavailable")
+
+    snapshot = DiscoverServices(
+        scanner=FakeScanner(),
+        project_resolver=FakeProjectResolver(),
+        service_probe=BrokenProbe(),
+    ).execute()
+
+    assert all(service.health is None for service in snapshot.services)
+    assert [warning.code for warning in snapshot.warnings].count("health-probe-failed") == 3

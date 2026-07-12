@@ -6,7 +6,7 @@ import json
 from datetime import UTC
 from typing import Any
 
-from portboard.domain.models import Service, ServiceSnapshot
+from portboard.domain.models import HealthInfo, Service, ServiceSnapshot
 
 SCHEMA_VERSION = 1
 
@@ -42,4 +42,19 @@ def _service_to_dict(service: Service) -> dict[str, Any]:
         "command": process.command if process is not None else None,
         "cwd": process.cwd if process is not None else None,
         "project_root": project.root if project is not None else None,
+        "health": _health_to_dict(service.health),
+    }
+
+
+def _health_to_dict(health: HealthInfo | None) -> dict[str, Any] | None:
+    """Serialize optional HTTP enrichment without changing core fields."""
+    if health is None:
+        return None
+    checked_at = health.checked_at.astimezone(UTC).isoformat().replace("+00:00", "Z")
+    return {
+        "protocol": health.protocol,
+        "status": health.status.value,
+        "status_code": health.status_code,
+        "latency_ms": health.latency_ms,
+        "checked_at": checked_at,
     }

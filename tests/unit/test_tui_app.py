@@ -5,7 +5,15 @@ from datetime import UTC, datetime
 
 from textual.widgets import DataTable, Input
 
-from portboard.domain.models import Listener, ProcessInfo, ProjectInfo, Service, ServiceSnapshot
+from portboard.domain.models import (
+    HealthInfo,
+    HealthStatus,
+    Listener,
+    ProcessInfo,
+    ProjectInfo,
+    Service,
+    ServiceSnapshot,
+)
 from portboard.presentation.tui.app import PortBoardApp
 
 
@@ -23,6 +31,13 @@ class FakeDiscoverServices:
                     listener=Listener(host="::1", port=3000, pid=10),
                     process=ProcessInfo(10, "node", "npm run dev", "/code/web"),
                     project=ProjectInfo("web", "/code/web"),
+                    health=HealthInfo(
+                        protocol="http",
+                        status=HealthStatus.HEALTHY,
+                        status_code=200,
+                        latency_ms=3.2,
+                        checked_at=datetime(2026, 7, 12, tzinfo=UTC),
+                    ),
                 ),
             ),
             warnings=(),
@@ -38,6 +53,8 @@ def test_dashboard_filters_and_sorts_the_discovered_services() -> None:
             table = app.query_one("#services", DataTable)
             assert table.row_count == 2
             assert table.get_row_at(0)[1] == "3000"
+            assert table.get_row_at(0)[2] == "healthy (200)"
+            assert table.get_row_at(0)[5] == "http://[::1]:3000"
 
             filter_input = app.query_one("#filter", Input)
             filter_input.value = "uvicorn"

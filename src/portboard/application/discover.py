@@ -5,8 +5,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from datetime import UTC, datetime
 
-from portboard.application.contracts import ListenerScanner, ProjectResolver
+from portboard.application.contracts import ListenerScanner, ProjectResolver, ServiceProbe
 from portboard.domain.models import (
+    HealthInfo,
     Listener,
     ProcessInfo,
     ProjectInfo,
@@ -23,11 +24,13 @@ class DiscoverServices:
         self,
         scanner: ListenerScanner,
         project_resolver: ProjectResolver,
+        service_probe: ServiceProbe | None = None,
         *,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         self._scanner = scanner
         self._project_resolver = project_resolver
+        self._service_probe = service_probe
         self._clock = clock or (lambda: datetime.now(UTC))
 
     def execute(self) -> ServiceSnapshot:
@@ -40,7 +43,15 @@ class DiscoverServices:
         for listener in sorted(listeners, key=_listener_sort_key):
             process = self._find_process(listener, warnings)
             project = self._find_project(listener, process, warnings)
-            services.append(Service(listener=listener, process=process, project=project))
+            health = self._find_health(listener, warnings)
+            services.append(
+                Service(
+                    listener=listener,
+                    process=process,
+                    project=project,
+                    health=health,
+                )
+            )
 
         return ServiceSnapshot(
             observed_at=self._clock(),
@@ -104,6 +115,25 @@ class DiscoverServices:
                     message=(
                         f"Could not resolve the project for {listener.host}:{listener.port}: "
                         f"{error}"
+                    ),
+                )
+            )
+            return None
+
+    def _find_health(
+        self, listener: Listener, warnings: list[ScanWarning]
+    ) -> HealthInfo | None:
+        if self._service_probe is None:
+            return None
+
+        try:
+            return self._service_probe.probe(listener)
+        except Exception as error:
+            warnings.append(
+                ScanWarning(
+                    code="health-probe-failed",
+                    message=(
+                        f"Could not check {listener.host}:{listener.port}: {error}"
                     ),
                 )
             )

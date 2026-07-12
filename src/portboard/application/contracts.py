@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from portboard.domain.models import ListenerScan, ProcessInfo, ProjectInfo
+from portboard.domain.models import HealthInfo, Listener, ListenerScan, ProcessInfo, ProjectInfo
 
 
 class ListenerScanner(Protocol):
@@ -22,3 +22,10 @@ class ProjectResolver(Protocol):
 
     def resolve(self, cwd: str) -> ProjectInfo | None:
         """Return the Git project containing *cwd*, if there is one."""
+
+
+class ServiceProbe(Protocol):
+    """Identifies and checks optional protocols exposed by a listener."""
+
+    def probe(self, listener: Listener) -> HealthInfo | None:
+        """Return HTTP health information when the listener responds to HTTP."""

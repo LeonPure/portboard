@@ -2,6 +2,8 @@ from datetime import UTC, datetime
 
 from portboard.domain.models import (
     Listener,
+    HealthInfo,
+    HealthStatus,
     ProcessInfo,
     ProjectInfo,
     ScanWarning,
@@ -24,6 +26,13 @@ def test_version_one_json_contract() -> None:
                     cwd="/code/example",
                 ),
                 project=ProjectInfo(name="example", root="/code/example"),
+                health=HealthInfo(
+                    protocol="http",
+                    status=HealthStatus.HEALTHY,
+                    status_code=200,
+                    latency_ms=12.5,
+                    checked_at=datetime(2026, 7, 12, 2, 0, tzinfo=UTC),
+                ),
             ),
         ),
         warnings=(ScanWarning(code="sample", message="A sample warning."),),
@@ -42,6 +51,13 @@ def test_version_one_json_contract() -> None:
                 "command": "npm run dev",
                 "cwd": "/code/example",
                 "project_root": "/code/example",
+                "health": {
+                    "protocol": "http",
+                    "status": "healthy",
+                    "status_code": 200,
+                    "latency_ms": 12.5,
+                    "checked_at": "2026-07-12T02:00:00Z",
+                },
             }
         ],
         "warnings": [{"code": "sample", "message": "A sample warning."}],

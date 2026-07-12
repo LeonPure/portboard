@@ -28,9 +28,10 @@ scripts and bug reports:
 uv run portboard --json
 ```
 
-It reports visible TCP listeners together with best-effort process metadata and
-their nearest Git project. When the operating system restricts access to a
-process, the command preserves the remaining results and reports a warning.
+It reports visible TCP listeners together with best-effort process metadata,
+their nearest Git project, and HTTP response status when a service responds to
+a short local probe. When the operating system restricts access to a process,
+the command preserves the remaining results and reports a warning.
 
 ## Planned experience
 
