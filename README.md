@@ -21,6 +21,16 @@ PortBoard has a live terminal dashboard with refresh, filtering, and sorting:
 uv run portboard
 ```
 
+Keyboard shortcuts in the dashboard:
+
+- `r`: refresh now; `f` / `Esc`: focus or clear the filter.
+- `p`, `o`, `n`: sort by project, port, or process; press again to reverse.
+- `c`: copy the selected HTTP service URL; `b`: open it in the default browser.
+- `x`: request to stop the selected process. PortBoard shows the PID, command,
+  and port, requires confirmation, then revalidates the process before sending
+  the termination request.
+- `q`: quit.
+
 The same discovery snapshot is also available as versioned JSON output for
 scripts and bug reports:
 

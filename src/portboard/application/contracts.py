@@ -29,3 +29,20 @@ class ServiceProbe(Protocol):
 
     def probe(self, listener: Listener) -> HealthInfo | None:
         """Return HTTP health information when the listener responds to HTTP."""
+
+
+class DesktopController(Protocol):
+    """Performs user-requested browser and clipboard operations."""
+
+    def open_url(self, url: str) -> None:
+        """Open *url* in the user's default browser."""
+
+    def copy_text(self, text: str) -> None:
+        """Copy *text* to the system clipboard."""
+
+
+class ProcessController(Protocol):
+    """Performs guarded process actions on the local operating system."""
+
+    def terminate_if_matches(self, expected: ProcessInfo) -> bool:
+        """Revalidate *expected* immediately before requesting termination."""

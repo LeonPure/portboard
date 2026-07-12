@@ -7,8 +7,11 @@ from datetime import UTC
 from typing import Protocol
 
 from textual.app import App, ComposeResult
-from textual.widgets import DataTable, Footer, Header, Input, Static
+from textual.containers import Grid
+from textual.screen import ModalScreen
+from textual.widgets import Button, DataTable, Footer, Header, Input, Label, Static
 
+from portboard.application.actions import ActionResult, ServiceActions
 from portboard.domain.models import HealthStatus, Service, ServiceSnapshot
 
 
@@ -17,6 +20,61 @@ class ServiceDiscoverer(Protocol):
 
     def execute(self) -> ServiceSnapshot:
         """Return the most recent local-service snapshot."""
+
+
+class StopConfirmationScreen(ModalScreen[bool]):
+    """Require an explicit acknowledgement before terminating a process."""
+
+    CSS = """
+    StopConfirmationScreen {
+        align: center middle;
+    }
+
+    #stop-dialog {
+        grid-size: 2;
+        grid-gutter: 1 2;
+        grid-rows: 1fr 3;
+        padding: 1 2;
+        width: 72;
+        height: 13;
+        border: thick $error;
+        background: $surface;
+    }
+
+    #stop-question {
+        column-span: 2;
+        content-align: center middle;
+    }
+
+    StopConfirmationScreen Button {
+        width: 100%;
+    }
+    """
+
+    def __init__(self, service: Service) -> None:
+        super().__init__()
+        self._service = service
+
+    def compose(self) -> ComposeResult:
+        """Show exactly which process and service the user is about to stop."""
+        process = self._service.process
+        assert process is not None
+        command = process.command or process.name or "unknown command"
+        question = (
+            f"Stop PID {process.pid} ({command}) listening on "
+            f"{self._service.listener.host}:{self._service.listener.port}?\n"
+            "PortBoard will revalidate the process immediately before stopping it."
+        )
+        yield Grid(
+            Label(question, id="stop-question"),
+            Button("Stop process", variant="error", id="confirm-stop"),
+            Button("Cancel", variant="primary", id="cancel-stop"),
+            id="stop-dialog",
+        )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Return an explicit decision to the dashboard callback."""
+        self.dismiss(event.button.id == "confirm-stop")
 
 
 class PortBoardApp(App[None]):
@@ -46,17 +104,28 @@ class PortBoardApp(App[None]):
         ("p", "sort_by_project", "Sort project"),
         ("o", "sort_by_port", "Sort port"),
         ("n", "sort_by_process", "Sort process"),
+        ("c", "copy_url", "Copy URL"),
+        ("b", "open_url", "Open URL"),
+        ("x", "request_stop", "Stop process"),
         ("q", "quit", "Quit"),
     ]
 
-    def __init__(self, discover: ServiceDiscoverer, *, refresh_interval: float = 3.0) -> None:
+    def __init__(
+        self,
+        discover: ServiceDiscoverer,
+        actions: ServiceActions,
+        *,
+        refresh_interval: float = 3.0,
+    ) -> None:
         super().__init__()
         self._discover = discover
+        self._actions = actions
         self._refresh_interval = refresh_interval
         self._snapshot: ServiceSnapshot | None = None
         self._filter_text = ""
         self._sort_field = "port"
         self._sort_reverse = False
+        self._visible_services: dict[str, Service] = {}
 
     def compose(self) -> ComposeResult:
         """Compose the dashboard without performing operating-system access."""
@@ -106,6 +175,31 @@ class PortBoardApp(App[None]):
         """Sort by process name, reversing on repeated use."""
         self._set_sort("process")
 
+    def action_copy_url(self) -> None:
+        """Copy the selected service's HTTP URL when one is available."""
+        service = self._selected_service()
+        if service is not None:
+            self._report_action(self._actions.copy_url(service))
+
+    def action_open_url(self) -> None:
+        """Open the selected service's HTTP URL when one is available."""
+        service = self._selected_service()
+        if service is not None:
+            self._report_action(self._actions.open_url(service))
+
+    def action_request_stop(self) -> None:
+        """Ask for confirmation before attempting to stop the selected process."""
+        service = self._selected_service()
+        if service is None:
+            return
+        if service.process is None:
+            self.notify("The selected service has no inspectable process.", severity="warning")
+            return
+        self.push_screen(
+            StopConfirmationScreen(service),
+            lambda confirmed: self._stop_after_confirmation(service, confirmed),
+        )
+
     def _set_sort(self, field: str) -> None:
         if self._sort_field == field:
             self._sort_reverse = not self._sort_reverse
@@ -127,6 +221,7 @@ class PortBoardApp(App[None]):
             return
 
         services = tuple(self._sorted_services(self._filtered_services(self._snapshot.services)))
+        self._visible_services = {_service_key(service): service for service in services}
         table = self.query_one("#services", DataTable)
         table.clear()
         for service in services:
@@ -160,6 +255,26 @@ class PortBoardApp(App[None]):
 
     def _sorted_services(self, services: Iterable[Service]) -> list[Service]:
         return sorted(services, key=lambda service: _sort_key(service, self._sort_field), reverse=self._sort_reverse)
+
+    def _selected_service(self) -> Service | None:
+        table = self.query_one("#services", DataTable)
+        if table.row_count == 0:
+            self.notify("No service is selected.", severity="warning")
+            return None
+        cell_key = table.coordinate_to_cell_key(table.cursor_coordinate)
+        return self._visible_services.get(cell_key.row_key.value)
+
+    def _stop_after_confirmation(
+        self, service: Service, confirmed: bool | None
+    ) -> None:
+        if not confirmed:
+            return
+        self._report_action(self._actions.stop(service))
+        self._refresh_services()
+
+    def _report_action(self, result: ActionResult) -> None:
+        severity = "information" if result.succeeded else "error"
+        self.notify(result.message, severity=severity)
 
 
 def _searchable_text(service: Service) -> str:

@@ -50,15 +50,22 @@ def test_default_mode_runs_the_terminal_dashboard(monkeypatch) -> None:
     created: dict[str, object] = {}
 
     class FakeDashboard:
-        def __init__(self, *, discover, refresh_interval: float) -> None:
+        def __init__(self, *, discover, actions, refresh_interval: float) -> None:
             created["discover"] = discover
+            created["actions"] = actions
             created["refresh_interval"] = refresh_interval
 
         def run(self) -> None:
             created["ran"] = True
 
     monkeypatch.setattr(cli, "build_discover_services", lambda: discovered)
+    monkeypatch.setattr(cli, "build_service_actions", lambda: "actions")
     monkeypatch.setattr(cli, "PortBoardApp", FakeDashboard)
 
     assert cli.main([]) == 0
-    assert created == {"discover": discovered, "refresh_interval": 3.0, "ran": True}
+    assert created == {
+        "discover": discovered,
+        "actions": "actions",
+        "refresh_interval": 3.0,
+        "ran": True,
+    }

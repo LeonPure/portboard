@@ -7,7 +7,7 @@ import sys
 from collections.abc import Sequence
 
 from portboard import __version__
-from portboard.bootstrap import build_discover_services
+from portboard.bootstrap import build_discover_services, build_service_actions
 from portboard.presentation.json_output import dumps
 from portboard.presentation.tui.app import PortBoardApp
 
@@ -50,6 +50,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     PortBoardApp(
         discover=discover_services,
+        actions=build_service_actions(),
         refresh_interval=arguments.refresh_seconds,
     ).run()
     return 0
