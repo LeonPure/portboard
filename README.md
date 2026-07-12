@@ -15,7 +15,14 @@ one fast, readable terminal interface.
 
 ## Current prototype
 
-The first discovery slice is available as versioned JSON output:
+PortBoard has a live terminal dashboard with refresh, filtering, and sorting:
+
+```bash
+uv run portboard
+```
+
+The same discovery snapshot is also available as versioned JSON output for
+scripts and bug reports:
 
 ```bash
 uv run portboard --json

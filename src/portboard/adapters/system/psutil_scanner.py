@@ -18,13 +18,13 @@ class PsutilListenerScanner:
     def scan(self) -> ListenerScan:
         try:
             connections = psutil.net_connections(kind="tcp")
-        except psutil.Error as error:
+        except (psutil.Error, OSError) as error:
             return self._scan_processes_after_global_failure(error)
 
         listeners = _listeners_from_connections(connections)
         return ListenerScan(listeners=_sort_listeners(listeners))
 
-    def _scan_processes_after_global_failure(self, error: psutil.Error) -> ListenerScan:
+    def _scan_processes_after_global_failure(self, error: Exception) -> ListenerScan:
         """Recover when one protected process aborts a global scan on macOS."""
         listeners: set[Listener] = set()
         try:
@@ -34,8 +34,19 @@ class PsutilListenerScanner:
                 except (psutil.AccessDenied, psutil.NoSuchProcess, psutil.ZombieProcess):
                     continue
                 listeners.update(_listeners_from_connections(connections, pid=process.pid))
-        except psutil.Error as fallback_error:
-            raise RuntimeError(f"Could not read TCP listeners: {fallback_error}") from fallback_error
+        except (psutil.Error, OSError) as fallback_error:
+            return ListenerScan(
+                listeners=_sort_listeners(listeners),
+                warnings=(
+                    ScanWarning(
+                        code="system-scan-unavailable",
+                        message=(
+                            "TCP listener discovery was unavailable "
+                            f"({error}); fallback scanning also failed ({fallback_error})."
+                        ),
+                    ),
+                ),
+            )
 
         return ListenerScan(
             listeners=_sort_listeners(listeners),

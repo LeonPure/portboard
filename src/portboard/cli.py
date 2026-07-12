@@ -9,6 +9,7 @@ from collections.abc import Sequence
 from portboard import __version__
 from portboard.bootstrap import build_discover_services
 from portboard.presentation.json_output import dumps
+from portboard.presentation.tui.app import PortBoardApp
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -26,6 +27,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="print the discovered services as JSON",
     )
+    parser.add_argument(
+        "--refresh-seconds",
+        type=_positive_refresh_seconds,
+        default=3.0,
+        help="refresh the terminal dashboard at this interval (default: 3 seconds)",
+    )
     return parser
 
 
@@ -34,10 +41,23 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     arguments = parser.parse_args(argv)
 
-    if not arguments.json:
-        parser.print_help()
+    discover_services = build_discover_services()
+
+    if arguments.json:
+        snapshot = discover_services.execute()
+        sys.stdout.write(f"{dumps(snapshot)}\n")
         return 0
 
-    snapshot = build_discover_services().execute()
-    sys.stdout.write(f"{dumps(snapshot)}\n")
+    PortBoardApp(
+        discover=discover_services,
+        refresh_interval=arguments.refresh_seconds,
+    ).run()
     return 0
+
+
+def _positive_refresh_seconds(value: str) -> float:
+    """Parse a refresh interval accepted by the live dashboard."""
+    seconds = float(value)
+    if seconds <= 0:
+        raise argparse.ArgumentTypeError("refresh seconds must be greater than zero")
+    return seconds

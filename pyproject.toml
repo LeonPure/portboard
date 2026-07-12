@@ -25,6 +25,7 @@ classifiers = [
 ]
 dependencies = [
   "psutil>=7.0",
+  "textual>=0.86",
 ]
 
 [dependency-groups]
