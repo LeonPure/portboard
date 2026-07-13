@@ -14,7 +14,7 @@ one fast, readable terminal interface.
 > PortBoard is currently an early alpha. The core discovery and terminal
 > workflows are implemented, but the public interfaces may still evolve.
 
-## Current prototype
+## Current alpha
 
 PortBoard has a live terminal dashboard with manual refresh, filtering, and sorting:
 
@@ -97,10 +97,16 @@ be configured in advance.
 
 ## Installation
 
-PortBoard is not published yet. The intended zero-install command is:
+Run the current alpha in an isolated environment with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uvx portboard
+uvx portboard@0.1.0a1
+```
+
+To install the command persistently:
+
+```bash
+uv tool install 'portboard==0.1.0a1'
 ```
 
 ## Development
@@ -135,8 +141,11 @@ defined in the [architecture document](./docs/architecture.md).
 
 ## Contributing
 
-Ideas, bug reports, and contributions are welcome through GitHub Issues and
-pull requests.
+Ideas, bug reports, and pull requests are welcome. See
+[CONTRIBUTING.md](./CONTRIBUTING.md) for the development workflow and
+[SECURITY.md](./SECURITY.md) for private vulnerability reporting.
+
+Release history is recorded in [CHANGELOG.md](./CHANGELOG.md).
 
 ## License
 

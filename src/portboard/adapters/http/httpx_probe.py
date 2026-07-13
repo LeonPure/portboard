@@ -8,6 +8,7 @@ from time import perf_counter
 
 import httpx
 
+from portboard import __version__
 from portboard.domain.models import HealthInfo, HealthStatus, Listener
 
 ClientFactory = Callable[[], httpx.Client]
@@ -37,7 +38,7 @@ class HttpxServiceProbe:
             with self._client_factory() as client:
                 response = client.get(
                     _url_for_listener(listener),
-                    headers={"User-Agent": "portboard/0.0.0"},
+                    headers={"User-Agent": f"portboard/{__version__}"},
                 )
         except (httpx.HTTPError, OSError):
             return None
