@@ -1,0 +1,7 @@
+# Every change requires review from the repository owner.
+* @LeonPure
+
+# Keep governance and release automation explicitly owned as well.
+/.github/ @LeonPure
+/SECURITY.md @LeonPure
+/CONTRIBUTING.md @LeonPure
