@@ -4,7 +4,14 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from portboard.domain.models import HealthInfo, Listener, ListenerScan, ProcessInfo, ProjectInfo
+from portboard.domain.models import (
+    ContainerScan,
+    HealthInfo,
+    Listener,
+    ListenerScan,
+    ProcessInfo,
+    ProjectInfo,
+)
 
 
 class ListenerScanner(Protocol):
@@ -46,3 +53,17 @@ class ProcessController(Protocol):
 
     def terminate_if_matches(self, expected: ProcessInfo) -> bool:
         """Revalidate *expected* immediately before requesting termination."""
+
+
+class ContainerScanner(Protocol):
+    """Reads optional Docker port mappings without affecting base discovery."""
+
+    def scan(self) -> ContainerScan:
+        """Return running-container port mappings and non-fatal warnings."""
+
+
+class LanAddressResolver(Protocol):
+    """Finds local network addresses that may be reachable by nearby devices."""
+
+    def resolve(self) -> tuple[str, ...]:
+        """Return usable LAN IPv4 addresses without loopback interfaces."""

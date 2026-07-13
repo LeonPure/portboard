@@ -4,16 +4,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 
-class Transport(str, Enum):
+class Transport(StrEnum):
     """Network transports supported by the first discovery release."""
 
     TCP = "tcp"
 
 
-class HealthStatus(str, Enum):
+class HealthStatus(StrEnum):
     """The availability state returned by a service health probe."""
 
     HEALTHY = "healthy"
@@ -38,6 +38,7 @@ class ProcessInfo:
     name: str | None
     command: str | None
     cwd: str | None
+    create_time: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,6 +61,25 @@ class HealthInfo:
 
 
 @dataclass(frozen=True, slots=True)
+class ContainerInfo:
+    """A running Docker container that publishes a local TCP port."""
+
+    id: str
+    name: str
+    image: str
+    container_port: int
+
+
+@dataclass(frozen=True, slots=True)
+class ContainerPortMapping:
+    """One Docker host-port mapping associated with a container."""
+
+    host: str
+    port: int
+    container: ContainerInfo
+
+
+@dataclass(frozen=True, slots=True)
 class Service:
     """One discovered local service and the metadata available for it."""
 
@@ -67,6 +87,8 @@ class Service:
     process: ProcessInfo | None = None
     project: ProjectInfo | None = None
     health: HealthInfo | None = None
+    container: ContainerInfo | None = None
+    lan_urls: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,6 +104,14 @@ class ListenerScan:
     """Listeners a system adapter could read, plus adapter-level warnings."""
 
     listeners: tuple[Listener, ...]
+    warnings: tuple[ScanWarning, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ContainerScan:
+    """Docker port mappings visible to an optional container adapter."""
+
+    mappings: tuple[ContainerPortMapping, ...]
     warnings: tuple[ScanWarning, ...] = ()
 
 

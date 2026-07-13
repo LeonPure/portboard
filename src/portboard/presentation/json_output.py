@@ -6,7 +6,7 @@ import json
 from datetime import UTC
 from typing import Any
 
-from portboard.domain.models import HealthInfo, Service, ServiceSnapshot
+from portboard.domain.models import ContainerInfo, HealthInfo, Service, ServiceSnapshot
 
 SCHEMA_VERSION = 1
 
@@ -43,6 +43,8 @@ def _service_to_dict(service: Service) -> dict[str, Any]:
         "cwd": process.cwd if process is not None else None,
         "project_root": project.root if project is not None else None,
         "health": _health_to_dict(service.health),
+        "container": _container_to_dict(service.container),
+        "lan_urls": list(service.lan_urls),
     }
 
 
@@ -57,4 +59,16 @@ def _health_to_dict(health: HealthInfo | None) -> dict[str, Any] | None:
         "status_code": health.status_code,
         "latency_ms": health.latency_ms,
         "checked_at": checked_at,
+    }
+
+
+def _container_to_dict(container: ContainerInfo | None) -> dict[str, Any] | None:
+    """Serialize optional Docker metadata for the matching host port."""
+    if container is None:
+        return None
+    return {
+        "id": container.id,
+        "name": container.name,
+        "image": container.image,
+        "container_port": container.container_port,
     }
