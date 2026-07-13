@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import psutil
+import pytest
 
 from portboard.adapters.system.psutil_scanner import PsutilListenerScanner
 
@@ -18,7 +19,7 @@ def test_scanner_reports_a_warning_when_global_scan_is_not_permitted(monkeypatch
     assert scan.warnings[0].code == "system-scan-partial"
 
 
-def test_scanner_degrades_when_macos_denies_process_enumeration(monkeypatch) -> None:
+def test_scanner_fails_when_macos_denies_all_listener_discovery(monkeypatch) -> None:
     def reject_global_scan(*args, **kwargs):
         raise PermissionError("Operation not permitted")
 
@@ -28,7 +29,5 @@ def test_scanner_degrades_when_macos_denies_process_enumeration(monkeypatch) -> 
     monkeypatch.setattr(psutil, "net_connections", reject_global_scan)
     monkeypatch.setattr(psutil, "process_iter", reject_process_enumeration)
 
-    scan = PsutilListenerScanner().scan()
-
-    assert scan.listeners == ()
-    assert scan.warnings[0].code == "system-scan-unavailable"
+    with pytest.raises(OSError, match="fallback scanning also failed"):
+        PsutilListenerScanner().scan()

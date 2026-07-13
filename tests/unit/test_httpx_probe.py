@@ -40,6 +40,19 @@ def test_probe_marks_server_errors_as_unhealthy() -> None:
     assert health.status_code == 503
 
 
+def test_probe_marks_client_errors_as_unhealthy() -> None:
+    probe = HttpxServiceProbe(
+        client_factory=lambda: httpx.Client(
+            transport=httpx.MockTransport(lambda request: httpx.Response(403))
+        )
+    )
+
+    health = probe.probe(Listener(host="127.0.0.1", port=5000))
+
+    assert health is not None
+    assert health.status is HealthStatus.UNHEALTHY
+
+
 def test_probe_ignores_non_http_or_unreachable_listeners() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("connection refused", request=request)

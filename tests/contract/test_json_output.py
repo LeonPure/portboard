@@ -1,9 +1,10 @@
 from datetime import UTC, datetime
 
 from portboard.domain.models import (
-    Listener,
+    ContainerInfo,
     HealthInfo,
     HealthStatus,
+    Listener,
     ProcessInfo,
     ProjectInfo,
     ScanWarning,
@@ -33,6 +34,13 @@ def test_version_one_json_contract() -> None:
                     latency_ms=12.5,
                     checked_at=datetime(2026, 7, 12, 2, 0, tzinfo=UTC),
                 ),
+                container=ContainerInfo(
+                    id="a762a2b37a1d",
+                    name="example-web",
+                    image="nginx:latest",
+                    container_port=80,
+                ),
+                lan_urls=("http://192.168.1.20:3000",),
             ),
         ),
         warnings=(ScanWarning(code="sample", message="A sample warning."),),
@@ -58,7 +66,38 @@ def test_version_one_json_contract() -> None:
                     "latency_ms": 12.5,
                     "checked_at": "2026-07-12T02:00:00Z",
                 },
+                "container": {
+                    "id": "a762a2b37a1d",
+                    "name": "example-web",
+                    "image": "nginx:latest",
+                    "container_port": 80,
+                },
+                "lan_urls": ["http://192.168.1.20:3000"],
             }
         ],
         "warnings": [{"code": "sample", "message": "A sample warning."}],
+    }
+
+
+def test_version_one_json_contract_preserves_unknown_values_as_null() -> None:
+    snapshot = ServiceSnapshot(
+        observed_at=datetime(2026, 7, 12, 2, 0, tzinfo=UTC),
+        services=(Service(listener=Listener(host="127.0.0.1", port=5432)),),
+        warnings=(),
+    )
+
+    service = snapshot_to_dict(snapshot)["services"][0]
+
+    assert service == {
+        "host": "127.0.0.1",
+        "port": 5432,
+        "transport": "tcp",
+        "pid": None,
+        "process_name": None,
+        "command": None,
+        "cwd": None,
+        "project_root": None,
+        "health": None,
+        "container": None,
+        "lan_urls": [],
     }
