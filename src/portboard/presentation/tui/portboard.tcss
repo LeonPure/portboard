@@ -1,0 +1,118 @@
+#filter {
+    margin: 1 2 0 2;
+}
+
+#services {
+    height: 1fr;
+    margin: 1 2;
+}
+
+#status {
+    height: auto;
+    margin: 0 2 1 2;
+    color: $text-muted;
+}
+
+ShortcutFooter {
+    dock: bottom;
+    height: 3;
+    padding: 0 1;
+    content-align: left top;
+    text-align: left;
+    background: $footer-background;
+}
+
+ShortcutFooter .shortcut-footer--category,
+ShortcutFooter .shortcut-footer--key {
+    color: $primary;
+    text-style: bold;
+}
+
+ShortcutFooter .shortcut-footer--description {
+    color: $footer-description-foreground;
+}
+
+StopConfirmationScreen,
+LanQrScreen,
+ServiceDetailScreen,
+WarningsScreen {
+    align: center middle;
+}
+
+#stop-dialog {
+    grid-size: 2;
+    grid-gutter: 1 2;
+    grid-rows: auto auto 1fr auto;
+    padding: 1 2;
+    width: 72;
+    height: 17;
+    border: thick $primary;
+    background: $surface;
+}
+
+#stop-title {
+    column-span: 2;
+    content-align: center middle;
+    color: $primary;
+    text-style: bold;
+}
+
+#stop-warning {
+    column-span: 2;
+    content-align: center middle;
+}
+
+#stop-process {
+    column-span: 2;
+    content-align: center middle;
+    color: $text-muted;
+}
+
+StopConfirmationScreen Button {
+    width: 100%;
+    content-align: center middle;
+    text-style: bold;
+}
+
+StopConfirmationScreen Button:focus {
+    color: $button-color-foreground;
+    background: $primary;
+    border: block $primary;
+    text-style: bold;
+}
+
+#lan-qr-dialog {
+    width: auto;
+    height: auto;
+    align: center middle;
+    padding: 1 2;
+    border: thick $primary;
+    background: $surface;
+}
+
+#lan-qr-url,
+#lan-qr-close,
+#lan-qr-code {
+    text-align: center;
+}
+
+#service-details,
+#warnings-dialog {
+    width: 90%;
+    height: 80%;
+    padding: 1 2;
+    border: thick $primary;
+    background: $surface;
+}
+
+#service-detail-content,
+#warnings-content {
+    width: 1fr;
+    height: auto;
+}
+
+#warnings-title {
+    color: $primary;
+    text-style: bold;
+    margin-bottom: 1;
+}

@@ -1,18 +1,47 @@
-"""Live Textual dashboard backed by the service-discovery use case."""
+"""Textual dashboard orchestration for PortBoard service discovery."""
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from datetime import UTC
-from typing import Protocol
+from typing import Literal, Protocol
 
 from textual.app import App, ComposeResult
-from textual.containers import Grid
-from textual.screen import ModalScreen
-from textual.widgets import Button, DataTable, Footer, Header, Input, Label, Static
+from textual.binding import Binding
+from textual.widgets import DataTable, Header, Input, Static
+from textual.worker import Worker, WorkerState
 
 from portboard.application.actions import ActionResult, ServiceActions
-from portboard.domain.models import HealthStatus, Service, ServiceSnapshot
+from portboard.domain.models import Service, ServiceSnapshot
+from portboard.presentation.tui.formatters import (
+    container_label as _container,
+    endpoint as _endpoint,
+    latency as _latency,
+    qr_text as _qr_text,
+    refresh_status as _refresh_status,
+    service_key as _service_key,
+    status as _status,
+    truncate as _truncate,
+)
+from portboard.presentation.tui.screens import (
+    LanQrScreen,
+    ServiceDetailScreen,
+    StopConfirmationScreen,
+    WarningsScreen,
+)
+from portboard.presentation.tui.state import DashboardState
+from portboard.presentation.tui.widgets import (
+    KeyboardServiceTable,
+    ShortcutFooter,
+    shortcut_footer_text as _shortcut_footer_text,
+)
+
+__all__ = [
+    "PortBoardApp",
+    "_qr_text",
+    "_refresh_status",
+    "_shortcut_footer_text",
+    "_truncate",
+]
 
 
 class ServiceDiscoverer(Protocol):
@@ -22,92 +51,25 @@ class ServiceDiscoverer(Protocol):
         """Return the most recent local-service snapshot."""
 
 
-class StopConfirmationScreen(ModalScreen[bool]):
-    """Require an explicit acknowledgement before terminating a process."""
-
-    CSS = """
-    StopConfirmationScreen {
-        align: center middle;
-    }
-
-    #stop-dialog {
-        grid-size: 2;
-        grid-gutter: 1 2;
-        grid-rows: 1fr 3;
-        padding: 1 2;
-        width: 72;
-        height: 13;
-        border: thick $error;
-        background: $surface;
-    }
-
-    #stop-question {
-        column-span: 2;
-        content-align: center middle;
-    }
-
-    StopConfirmationScreen Button {
-        width: 100%;
-    }
-    """
-
-    def __init__(self, service: Service) -> None:
-        super().__init__()
-        self._service = service
-
-    def compose(self) -> ComposeResult:
-        """Show exactly which process and service the user is about to stop."""
-        process = self._service.process
-        assert process is not None
-        command = process.command or process.name or "unknown command"
-        question = (
-            f"Stop PID {process.pid} ({command}) listening on "
-            f"{self._service.listener.host}:{self._service.listener.port}?\n"
-            "PortBoard will revalidate the process immediately before stopping it."
-        )
-        yield Grid(
-            Label(question, id="stop-question"),
-            Button("Stop process", variant="error", id="confirm-stop"),
-            Button("Cancel", variant="primary", id="cancel-stop"),
-            id="stop-dialog",
-        )
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Return an explicit decision to the dashboard callback."""
-        self.dismiss(event.button.id == "confirm-stop")
-
-
 class PortBoardApp(App[None]):
-    """Display, filter, sort, and periodically refresh local services."""
+    """Display, filter, sort, and optionally refresh local services."""
 
     TITLE = "PortBoard"
-    CSS = """
-    #filter {
-        margin: 1 2 0 2;
-    }
-
-    #services {
-        height: 1fr;
-        margin: 1 2;
-    }
-
-    #status {
-        height: auto;
-        margin: 0 2 1 2;
-        color: $text-muted;
-    }
-    """
+    CSS_PATH = "portboard.tcss"
     BINDINGS = [
-        ("r", "refresh", "Refresh"),
-        ("f", "focus_filter", "Filter"),
-        ("escape", "clear_filter", "Clear filter"),
-        ("p", "sort_by_project", "Sort project"),
-        ("o", "sort_by_port", "Sort port"),
-        ("n", "sort_by_process", "Sort process"),
-        ("c", "copy_url", "Copy URL"),
-        ("b", "open_url", "Open URL"),
-        ("x", "request_stop", "Stop process"),
-        ("q", "quit", "Quit"),
+        Binding("r", "refresh", "View: Refresh"),
+        Binding("f", "focus_filter", "View: Filter"),
+        Binding("escape", "clear_filter", "View: Clear"),
+        Binding("d", "show_details", "View: Details"),
+        Binding("w", "show_warnings", "View: Warnings"),
+        Binding("q", "quit", "View: Quit"),
+        Binding("p", "sort_by_project", "Sort: Project"),
+        Binding("o", "sort_by_port", "Sort: Port"),
+        Binding("n", "sort_by_process", "Sort: Process"),
+        Binding("c", "copy_url", "Service: Copy"),
+        Binding("b", "open_url", "Service: Open"),
+        Binding("x", "request_stop", "Service: Stop"),
+        Binding("l", "show_lan_qr", "Service: LAN QR"),
     ]
 
     def __init__(
@@ -115,155 +77,205 @@ class PortBoardApp(App[None]):
         discover: ServiceDiscoverer,
         actions: ServiceActions,
         *,
-        refresh_interval: float = 3.0,
+        refresh_interval: float | None = None,
     ) -> None:
         super().__init__()
         self._discover = discover
         self._actions = actions
         self._refresh_interval = refresh_interval
-        self._snapshot: ServiceSnapshot | None = None
-        self._filter_text = ""
-        self._sort_field = "port"
-        self._sort_reverse = False
+        self._state = DashboardState()
         self._visible_services: dict[str, Service] = {}
+        self._refresh_worker: Worker[ServiceSnapshot] | None = None
+        self._refresh_pending = False
 
     def compose(self) -> ComposeResult:
-        """Compose the dashboard without performing operating-system access."""
         yield Header(show_clock=False)
-        yield Input(placeholder="Filter by project, port, process, command, or address", id="filter")
-        yield DataTable(id="services")
+        yield Input(
+            placeholder="Filter by project, port, process, command, or address",
+            id="filter",
+        )
+        yield KeyboardServiceTable(id="services", cell_padding=0)
         yield Static(id="status")
-        yield Footer()
+        yield ShortcutFooter(id="shortcuts")
 
     def on_mount(self) -> None:
-        """Configure the table and start the first scan after mounting."""
         table = self.query_one("#services", DataTable)
-        table.add_columns(
-            "Project",
-            "Port",
-            "Status",
-            "Latency",
-            "Process",
-            "Command",
-            "Endpoint",
-        )
+        table.add_column("Project", key="project", width=15)
+        table.add_column("Port", key="port", width=6)
+        table.add_column("Status", key="status", width=15)
+        table.add_column("Latency", key="latency", width=9)
+        table.add_column("Process", key="process", width=16)
+        table.add_column("Command", key="command", width=32)
+        table.add_column("Endpoint", key="endpoint", width=24)
+        table.add_column("Container", key="container", width=16)
         table.cursor_type = "row"
         table.zebra_stripes = True
         table.focus()
-        self._refresh_services()
-        self.set_interval(self._refresh_interval, self._refresh_services)
+        self._request_refresh()
+        if self._refresh_interval is not None:
+            self.set_interval(self._refresh_interval, self._request_refresh)
 
     def on_input_changed(self, event: Input.Changed) -> None:
-        """Apply filtering locally without repeating the system scan."""
-        self._filter_text = event.value.casefold().strip()
+        self._state.set_filter(event.value)
         self._render_services()
 
+    def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
+        if event.worker is not self._refresh_worker:
+            return
+        if event.state not in {WorkerState.ERROR, WorkerState.SUCCESS}:
+            return
+
+        worker = self._refresh_worker
+        self._refresh_worker = None
+        if event.state is WorkerState.SUCCESS and worker.result is not None:
+            self._state.snapshot = worker.result
+            self._render_services()
+        else:
+            self.query_one("#status", Static).update(
+                f"Refresh failed: {worker.error or 'unknown error'}"
+            )
+
+        if self._refresh_pending:
+            self._refresh_pending = False
+            self._request_refresh()
+
     def action_refresh(self) -> None:
-        """Request a fresh snapshot immediately."""
-        self._refresh_services()
+        self._request_refresh()
 
     def action_focus_filter(self) -> None:
-        """Move keyboard input into the filter field."""
         self.query_one("#filter", Input).focus()
 
     def action_clear_filter(self) -> None:
-        """Clear the current filter and return focus to the services table."""
         self.query_one("#filter", Input).value = ""
         self.query_one("#services", DataTable).focus()
 
     def action_sort_by_project(self) -> None:
-        """Sort by project name, reversing on repeated use."""
         self._set_sort("project")
 
     def action_sort_by_port(self) -> None:
-        """Sort by port number, reversing on repeated use."""
         self._set_sort("port")
 
     def action_sort_by_process(self) -> None:
-        """Sort by process name, reversing on repeated use."""
         self._set_sort("process")
 
     def action_copy_url(self) -> None:
-        """Copy the selected service's HTTP URL when one is available."""
         service = self._selected_service()
         if service is not None:
             self._report_action(self._actions.copy_url(service))
 
     def action_open_url(self) -> None:
-        """Open the selected service's HTTP URL when one is available."""
         service = self._selected_service()
         if service is not None:
             self._report_action(self._actions.open_url(service))
 
     def action_request_stop(self) -> None:
-        """Ask for confirmation before attempting to stop the selected process."""
         service = self._selected_service()
         if service is None:
             return
         if service.process is None:
-            self.notify("The selected service has no inspectable process.", severity="warning")
+            self.notify(
+                "The selected service has no inspectable process.",
+                severity="warning",
+            )
+            return
+        if service.process.create_time is None:
+            self.notify(
+                "The selected process has no stable start time and cannot be stopped safely.",
+                severity="warning",
+            )
             return
         self.push_screen(
             StopConfirmationScreen(service),
             lambda confirmed: self._stop_after_confirmation(service, confirmed),
         )
 
+    def action_show_lan_qr(self) -> None:
+        service = self._selected_service()
+        if service is None:
+            return
+        if not service.lan_urls:
+            self.notify(
+                "The selected service has no LAN-accessible HTTP URL.",
+                severity="warning",
+            )
+            return
+        self.push_screen(LanQrScreen(service.lan_urls[0]))
+
+    def action_show_details(self) -> None:
+        service = self._selected_service()
+        if service is not None:
+            self.push_screen(ServiceDetailScreen(service))
+
+    def action_show_warnings(self) -> None:
+        snapshot = self._state.snapshot
+        if snapshot is None or not snapshot.warnings:
+            self.notify("The latest scan has no warnings.", severity="information")
+            return
+        self.push_screen(WarningsScreen(snapshot.warnings))
+
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        if event.data_table.id == "services":
+            self.action_show_details()
+
     def _set_sort(self, field: str) -> None:
-        if self._sort_field == field:
-            self._sort_reverse = not self._sort_reverse
-        else:
-            self._sort_field = field
-            self._sort_reverse = False
+        self._state.toggle_sort(field)
         self._render_services()
 
-    def _refresh_services(self) -> None:
-        try:
-            self._snapshot = self._discover.execute()
-        except Exception as error:
-            self.query_one("#status", Static).update(f"Refresh failed: {error}")
+    def _request_refresh(self) -> None:
+        if self._refresh_worker is not None and not self._refresh_worker.is_finished:
+            self._refresh_pending = True
             return
-        self._render_services()
+        self.query_one("#status", Static).update("Refreshing local services…")
+        self._refresh_worker = self.run_worker(
+            self._discover.execute,
+            name="service-discovery",
+            group="service-discovery",
+            exit_on_error=False,
+            thread=True,
+        )
 
     def _render_services(self) -> None:
-        if self._snapshot is None:
+        snapshot = self._state.snapshot
+        if snapshot is None:
             return
 
-        services = tuple(self._sorted_services(self._filtered_services(self._snapshot.services)))
-        self._visible_services = {_service_key(service): service for service in services}
+        services = self._state.visible_services()
+        self._visible_services = {
+            _service_key(service): service for service in services
+        }
         table = self.query_one("#services", DataTable)
         table.clear()
         for service in services:
             table.add_row(
-                service.project.name if service.project is not None else "—",
+                _truncate(service.project.name, 15)
+                if service.project is not None
+                else "—",
                 str(service.listener.port),
                 _status(service),
                 _latency(service),
-                service.process.name if service.process and service.process.name else "—",
-                service.process.command if service.process and service.process.command else "—",
-                _endpoint(service),
+                _truncate(service.process.name, 16)
+                if service.process and service.process.name
+                else "—",
+                _truncate(service.process.command, 32)
+                if service.process and service.process.command
+                else "—",
+                _truncate(_endpoint(service), 24),
+                _truncate(_container(service), 16),
                 key=_service_key(service),
             )
 
-        observed_at = self._snapshot.observed_at.astimezone(UTC).strftime("%H:%M:%SZ")
-        warning_count = len(self._snapshot.warnings)
-        warning_text = "no warnings" if warning_count == 0 else f"{warning_count} warning(s)"
+        observed_at = snapshot.observed_at.astimezone(UTC).strftime("%H:%M:%SZ")
+        warning_count = len(snapshot.warnings)
+        warning_text = (
+            "no warnings" if warning_count == 0 else f"{warning_count} warning(s)"
+        )
+        sort_direction = " (descending)" if self._state.sort_reverse else ""
         self.query_one("#status", Static).update(
-            f"{len(services)} of {len(self._snapshot.services)} services · "
+            f"{len(services)} of {len(snapshot.services)} services · "
             f"updated {observed_at} · {warning_text} · "
-            f"sorted by {self._sort_field}{' (descending)' if self._sort_reverse else ''}"
+            f"{_refresh_status(self._refresh_interval)} · "
+            f"sorted by {self._state.sort_field}{sort_direction}"
         )
-
-    def _filtered_services(self, services: Iterable[Service]) -> Iterable[Service]:
-        if not self._filter_text:
-            return services
-        return (
-            service
-            for service in services
-            if self._filter_text in _searchable_text(service).casefold()
-        )
-
-    def _sorted_services(self, services: Iterable[Service]) -> list[Service]:
-        return sorted(services, key=lambda service: _sort_key(service, self._sort_field), reverse=self._sort_reverse)
 
     def _selected_service(self) -> Service | None:
         table = self.query_one("#services", DataTable)
@@ -271,7 +283,8 @@ class PortBoardApp(App[None]):
             self.notify("No service is selected.", severity="warning")
             return None
         cell_key = table.coordinate_to_cell_key(table.cursor_coordinate)
-        return self._visible_services.get(cell_key.row_key.value)
+        row_key = cell_key.row_key.value
+        return self._visible_services.get(row_key) if row_key is not None else None
 
     def _stop_after_confirmation(
         self, service: Service, confirmed: bool | None
@@ -279,66 +292,10 @@ class PortBoardApp(App[None]):
         if not confirmed:
             return
         self._report_action(self._actions.stop(service))
-        self._refresh_services()
+        self._request_refresh()
 
     def _report_action(self, result: ActionResult) -> None:
-        severity = "information" if result.succeeded else "error"
-        self.notify(result.message, severity=severity)
-
-
-def _searchable_text(service: Service) -> str:
-    """Return user-facing service fields that should match the filter."""
-    return " ".join(
-        value
-        for value in (
-            service.listener.host,
-            str(service.listener.port),
-            service.process.name if service.process else None,
-            service.process.command if service.process else None,
-            service.process.cwd if service.process else None,
-            service.project.name if service.project else None,
-            service.project.root if service.project else None,
+        severity: Literal["information", "error"] = (
+            "information" if result.succeeded else "error"
         )
-        if value is not None
-    )
-
-
-def _sort_key(service: Service, field: str) -> tuple[str, int]:
-    """Return a deterministic key for each supported user sort."""
-    if field == "port":
-        return ("", service.listener.port)
-    if field == "project":
-        return (service.project.name.casefold() if service.project else "", service.listener.port)
-    return (
-        service.process.name.casefold() if service.process and service.process.name else "",
-        service.listener.port,
-    )
-
-
-def _endpoint(service: Service) -> str:
-    """Format a TCP endpoint, including a URL when HTTP was identified."""
-    host = service.listener.host
-    if ":" in host and not host.startswith("["):
-        host = f"[{host}]"
-    endpoint = f"{host}:{service.listener.port}"
-    return f"http://{endpoint}" if service.health and service.health.protocol == "http" else endpoint
-
-
-def _status(service: Service) -> str:
-    """Render the best available service status without inventing HTTP health."""
-    if service.health is None:
-        return "listening"
-    label = "healthy" if service.health.status is HealthStatus.HEALTHY else "unhealthy"
-    return f"{label} ({service.health.status_code})"
-
-
-def _latency(service: Service) -> str:
-    """Render HTTP probe latency only when a service responded to the probe."""
-    if service.health is None:
-        return "—"
-    return f"{service.health.latency_ms:.1f} ms"
-
-
-def _service_key(service: Service) -> str:
-    """Create a stable table key for the lifetime of one snapshot."""
-    return f"{service.listener.host}:{service.listener.port}:{service.listener.pid}"
+        self.notify(result.message, severity=severity)
