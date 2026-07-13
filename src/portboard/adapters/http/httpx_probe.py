@@ -47,7 +47,7 @@ class HttpxServiceProbe:
             protocol="http",
             status=(
                 HealthStatus.HEALTHY
-                if response.status_code < 500
+                if response.status_code < 400
                 else HealthStatus.UNHEALTHY
             ),
             status_code=response.status_code,

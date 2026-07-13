@@ -7,6 +7,7 @@ import sys
 from collections.abc import Sequence
 
 from portboard import __version__
+from portboard.application.errors import DiscoveryUnavailable
 from portboard.bootstrap import build_discover_services, build_service_actions
 from portboard.presentation.json_output import dumps
 from portboard.presentation.tui.app import PortBoardApp
@@ -30,8 +31,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--refresh-seconds",
         type=_positive_refresh_seconds,
-        default=3.0,
-        help="refresh the terminal dashboard at this interval (default: 3 seconds)",
+        metavar="SECONDS",
+        help="automatically refresh the terminal dashboard at this interval",
     )
     return parser
 
@@ -44,7 +45,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     discover_services = build_discover_services()
 
     if arguments.json:
-        snapshot = discover_services.execute()
+        try:
+            snapshot = discover_services.execute()
+        except DiscoveryUnavailable as error:
+            sys.stderr.write(f"portboard: {error}\n")
+            return 1
         sys.stdout.write(f"{dumps(snapshot)}\n")
         return 0
 

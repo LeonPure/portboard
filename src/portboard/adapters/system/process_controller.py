@@ -14,6 +14,8 @@ class PsutilProcessController:
 
     def terminate_if_matches(self, expected: ProcessInfo) -> bool:
         """Revalidate PID metadata immediately before requesting termination."""
+        if expected.create_time is None:
+            return False
         try:
             process = psutil.Process(expected.pid)
             current = _process_info(process)
@@ -38,6 +40,7 @@ def _process_info(process: psutil.Process) -> ProcessInfo:
         name=process.name(),
         command=shlex.join(command_parts) if command_parts else None,
         cwd=process.cwd(),
+        create_time=process.create_time(),
     )
 
 
@@ -45,6 +48,7 @@ def _matches_expected(current: ProcessInfo, expected: ProcessInfo) -> bool:
     """Compare every field that was readable when the service was discovered."""
     return (
         current.pid == expected.pid
+        and current.create_time == expected.create_time
         and (expected.name is None or current.name == expected.name)
         and (expected.command is None or current.command == expected.command)
         and (expected.cwd is None or current.cwd == expected.cwd)

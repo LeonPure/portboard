@@ -53,6 +53,11 @@ class ServiceActions:
         """Terminate a process only after the caller obtains user confirmation."""
         if service.process is None:
             return ActionResult(False, "The selected service has no inspectable process.")
+        if service.process.create_time is None:
+            return ActionResult(
+                False,
+                "The selected process cannot be stopped safely because its start time is unavailable.",
+            )
         try:
             terminated = self._process_controller.terminate_if_matches(service.process)
         except Exception as error:
@@ -67,7 +72,10 @@ class ServiceActions:
 
 def service_url(service: Service) -> str | None:
     """Return a browser-safe URL only for listeners identified as HTTP."""
-    if service.health is None or service.health.protocol != "http":
+    if (
+        service.health is None
+        or service.health.protocol != "http"
+    ):
         return None
 
     host = service.listener.host

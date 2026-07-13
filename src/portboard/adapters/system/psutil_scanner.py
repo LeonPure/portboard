@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import shlex
-from typing import Callable, TypeVar
+from collections.abc import Callable, Iterable
+from typing import Any, TypeVar, cast
 
 import psutil
 
@@ -35,18 +36,10 @@ class PsutilListenerScanner:
                     continue
                 listeners.update(_listeners_from_connections(connections, pid=process.pid))
         except (psutil.Error, OSError) as fallback_error:
-            return ListenerScan(
-                listeners=_sort_listeners(listeners),
-                warnings=(
-                    ScanWarning(
-                        code="system-scan-unavailable",
-                        message=(
-                            "TCP listener discovery was unavailable "
-                            f"({error}); fallback scanning also failed ({fallback_error})."
-                        ),
-                    ),
-                ),
-            )
+            raise OSError(
+                "TCP listener discovery was unavailable "
+                f"({error}); fallback scanning also failed ({fallback_error})."
+            ) from fallback_error
 
         return ListenerScan(
             listeners=_sort_listeners(listeners),
@@ -67,18 +60,25 @@ class PsutilListenerScanner:
             name = _read_process_field(process.name)
             command_parts = _read_process_field(process.cmdline)
             cwd = _read_process_field(process.cwd)
+            create_time = _read_process_field(process.create_time)
         except (psutil.AccessDenied, psutil.NoSuchProcess, psutil.ZombieProcess):
             return None
 
         command = shlex.join(command_parts) if command_parts else None
-        return ProcessInfo(pid=pid, name=name, command=command, cwd=cwd)
+        return ProcessInfo(
+            pid=pid,
+            name=name,
+            command=command,
+            cwd=cwd,
+            create_time=create_time,
+        )
 
 
 def _listeners_from_connections(
-    connections: object, *, pid: int | None = None
+    connections: Iterable[Any], *, pid: int | None = None
 ) -> set[Listener]:
     listeners: set[Listener] = set()
-    for connection in connections:  # type: ignore[union-attr]
+    for connection in connections:
         if connection.status != psutil.CONN_LISTEN or not connection.laddr:
             continue
 
@@ -98,7 +98,7 @@ def _address_parts(address: object) -> tuple[str, int]:
     if host is not None and port is not None:
         return str(host), int(port)
 
-    host, port = address  # type: ignore[misc]
+    host, port = cast(tuple[Any, Any], address)
     return str(host), int(port)
 
 
