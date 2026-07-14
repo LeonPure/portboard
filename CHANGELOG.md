@@ -6,6 +6,15 @@ versions.
 
 ## [Unreleased]
 
+## [0.1.0a2] - 2026-07-14
+
+### Added
+
+- Build standalone macOS and Linux executables for arm64 and x64 releases.
+- Provide an npm launcher that installs only the native executable for the
+  current platform without modifying Python environments.
+- Attach release binaries and SHA-256 checksums to GitHub Releases.
+
 ## [0.1.0a1] - 2026-07-13
 
 ### Added
@@ -24,5 +33,6 @@ versions.
 - Require explicit confirmation and process creation-time validation before
   terminating a process.
 
-[Unreleased]: https://github.com/LeonPure/portboard/compare/v0.1.0a1...HEAD
+[Unreleased]: https://github.com/LeonPure/portboard/compare/v0.1.0a2...HEAD
+[0.1.0a2]: https://github.com/LeonPure/portboard/compare/v0.1.0a1...v0.1.0a2
 [0.1.0a1]: https://github.com/LeonPure/portboard/releases/tag/v0.1.0a1

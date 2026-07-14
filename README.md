@@ -100,14 +100,33 @@ be configured in advance.
 Run the current alpha in an isolated environment with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uvx portboard@0.1.0a1
+uvx portboard@0.1.0a2
 ```
 
 To install the command persistently:
 
 ```bash
-uv tool install 'portboard==0.1.0a1'
+uv tool install 'portboard==0.1.0a2'
 ```
+
+New tagged releases also provide standalone macOS and Linux executables that
+do not require Python. Node.js users can run the matching native executable
+through npm:
+
+```bash
+npx @leonpure/portboard
+```
+
+Or install it globally:
+
+```bash
+npm install --global @leonpure/portboard
+portboard
+```
+
+The npm distribution supports arm64 and x64 on macOS 15+ and Linux systems
+compatible with Ubuntu 22.04. Python installations remain available for older
+supported systems.
 
 ## Development
 

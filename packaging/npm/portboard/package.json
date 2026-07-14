@@ -1,0 +1,52 @@
+{
+  "name": "@leonpure/portboard",
+  "version": "0.1.0-alpha.2",
+  "description": "A terminal dashboard for local development services",
+  "license": "MIT",
+  "homepage": "https://github.com/LeonPure/portboard#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LeonPure/portboard.git",
+    "directory": "packaging/npm/portboard"
+  },
+  "bugs": {
+    "url": "https://github.com/LeonPure/portboard/issues"
+  },
+  "keywords": [
+    "cli",
+    "developer-tools",
+    "ports",
+    "process",
+    "terminal",
+    "tui"
+  ],
+  "type": "commonjs",
+  "bin": {
+    "portboard": "bin/portboard.js"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "README.md"
+  ],
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "optionalDependencies": {
+    "@leonpure/portboard-darwin-arm64": "0.1.0-alpha.2",
+    "@leonpure/portboard-darwin-x64": "0.1.0-alpha.2",
+    "@leonpure/portboard-linux-arm64": "0.1.0-alpha.2",
+    "@leonpure/portboard-linux-x64": "0.1.0-alpha.2"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}
