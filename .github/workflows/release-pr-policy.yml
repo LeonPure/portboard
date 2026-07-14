@@ -1,0 +1,21 @@
+name: Release PR Policy
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  release-source-policy:
+    name: release source policy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+    steps:
+      - name: Require the repository develop branch
+        run: |
+          test "${HEAD_REF}" = "develop"
+          test "${HEAD_REPOSITORY}" = "${GITHUB_REPOSITORY}"
