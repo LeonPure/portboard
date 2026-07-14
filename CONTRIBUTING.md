@@ -48,6 +48,10 @@ All pull requests require passing CI and approval from the repository owner.
 Only the owner can merge changes. Do not open feature pull requests directly
 against `main`.
 
+Feature and fix pull requests are squash-merged into `develop`. Release pull
+requests from `develop` to `main` use a merge commit so the two long-lived
+branches retain a shared history.
+
 Releases are intentionally manual. The owner selects a release point, updates
 the version and changelog on `develop`, merges `develop` into `main` through a
 release pull request, and creates the matching protected `v*` tag. Only commits
