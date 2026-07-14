@@ -23,3 +23,14 @@ jobs:
       - run: uv run mypy
       - run: uv run pytest
       - run: uv build
+      - name: Test npm launcher
+        if: matrix.python-version == '3.11'
+        run: npm test --prefix packaging/npm/portboard
+      - name: Build and verify standalone executable
+        if: matrix.python-version == '3.11'
+        run: |
+          uv run pyinstaller --clean --noconfirm \
+            --distpath build/standalone-dist \
+            --workpath build/pyinstaller \
+            packaging/pyinstaller/portboard.spec
+          build/standalone-dist/portboard --version

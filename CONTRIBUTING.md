@@ -55,7 +55,14 @@ branches retain a shared history.
 Releases are intentionally manual. The owner selects a release point, updates
 the version and changelog on `develop`, merges `develop` into `main` through a
 release pull request, and creates the matching protected `v*` tag. Only commits
-already contained in `main` can be published to PyPI.
+already contained in `main` can be published. The protected release workflow
+builds PyPI distributions, native macOS/Linux executables, and npm packages.
+PyPI and npm publishing each use an owner-approved GitHub environment.
+
+The Python version and all npm package versions must be updated together. PEP
+440 prereleases map to npm SemVer prereleases, for example `0.1.0a2` maps to
+`0.1.0-alpha.2`. See [docs/releasing.md](./docs/releasing.md) for the complete
+owner release checklist and npm trusted-publishing bootstrap.
 
 ## Safety and compatibility
 
