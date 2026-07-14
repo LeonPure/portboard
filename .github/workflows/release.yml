@@ -38,6 +38,126 @@ jobs:
           path: dist/
           if-no-files-found: error
 
+  standalone:
+    name: Build standalone (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            target: darwin-arm64
+          - runner: macos-15-intel
+            target: darwin-x64
+          - runner: ubuntu-22.04-arm
+            target: linux-arm64
+          - runner: ubuntu-22.04
+            target: linux-x64
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+          enable-cache: true
+      - run: uv sync --locked
+      - name: Build standalone executable
+        run: uv run pyinstaller --clean --noconfirm packaging/pyinstaller/portboard.spec
+      - name: Name and verify executable
+        shell: bash
+        run: |
+          mv dist/portboard "dist/portboard-${{ matrix.target }}"
+          "dist/portboard-${{ matrix.target }}" --version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: standalone-${{ matrix.target }}
+          path: dist/portboard-${{ matrix.target }}
+          if-no-files-found: error
+
+  package-npm:
+    name: Build npm packages
+    needs: [build, standalone]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: standalone-*
+          path: dist/standalone
+          merge-multiple: true
+      - name: Assemble platform packages
+        run: |
+          for target in darwin-arm64 darwin-x64 linux-arm64 linux-x64; do
+            package="packaging/npm/platforms/${target}"
+            mkdir -p "${package}/bin"
+            install -m 755 "dist/standalone/portboard-${target}" "${package}/bin/portboard"
+            cp packaging/npm/platforms/README.md "${package}/README.md"
+            cp LICENSE "${package}/LICENSE"
+          done
+          cp LICENSE packaging/npm/portboard/LICENSE
+      - name: Test npm launcher
+        run: npm test --prefix packaging/npm/portboard
+      - name: Verify npm launcher end to end
+        run: |
+          package="packaging/npm/portboard/node_modules/@leonpure/portboard-linux-x64"
+          mkdir -p "${package}"
+          cp -R packaging/npm/platforms/linux-x64/. "${package}/"
+          node packaging/npm/portboard/bin/portboard.js --version
+      - name: Pack npm distributions
+        run: |
+          mkdir -p dist/npm
+          for target in darwin-arm64 darwin-x64 linux-arm64 linux-x64; do
+            npm pack "packaging/npm/platforms/${target}" --pack-destination dist/npm
+          done
+          npm pack packaging/npm/portboard --pack-destination dist/npm
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-package-distributions
+          path: dist/npm/
+          if-no-files-found: error
+
+  github-release:
+    name: Publish GitHub release assets
+    needs: [build, standalone]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/release
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: standalone-*
+          path: dist/release
+          merge-multiple: true
+      - name: Generate checksums
+        working-directory: dist/release
+        run: sha256sum * > SHA256SUMS
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          release_flags=()
+          if [[ "${GITHUB_REF_NAME}" =~ (a|b|rc)[0-9]+$ ]]; then
+            release_flags+=(--prerelease)
+          fi
+          if gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" dist/release/* \
+              --repo "${GITHUB_REPOSITORY}" --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" dist/release/* \
+              --repo "${GITHUB_REPOSITORY}" --verify-tag --generate-notes "${release_flags[@]}"
+          fi
+
   publish:
     name: Publish to PyPI
     needs: build
@@ -53,3 +173,55 @@ jobs:
           name: python-package-distributions
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish-npm:
+    name: Publish to npm
+    needs: package-npm
+    runs-on: ubuntu-latest
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/@leonpure/portboard
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Use a trusted-publishing compatible npm
+        run: npm install --global npm@11.18.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: npm-package-distributions
+          path: dist/npm
+      - name: Publish platform packages before the launcher
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm_version="$(node -p "require('./packaging/npm/portboard/package.json').version")"
+          dist_tag="latest"
+          if [[ "${npm_version}" == *-* ]]; then
+            dist_tag="next"
+          fi
+
+          publish_if_missing() {
+            package_name="$1"
+            archive="$2"
+            if npm view "${package_name}@${npm_version}" version >/dev/null 2>&1; then
+              echo "${package_name}@${npm_version} is already published"
+            else
+              npm publish "${archive}" --access public --tag "${dist_tag}"
+            fi
+          }
+
+          for target in darwin-arm64 darwin-x64 linux-arm64 linux-x64; do
+            publish_if_missing \
+              "@leonpure/portboard-${target}" \
+              "dist/npm/leonpure-portboard-${target}-${npm_version}.tgz"
+          done
+          publish_if_missing \
+            "@leonpure/portboard" \
+            "dist/npm/leonpure-portboard-${npm_version}.tgz"
