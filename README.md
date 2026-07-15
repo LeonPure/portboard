@@ -109,6 +109,13 @@ To install the command persistently:
 uv tool install 'portboard==0.1.0a2'
 ```
 
+Homebrew users can install the matching native executable without Python or
+Node.js:
+
+```bash
+brew install LeonPure/tap/portboard
+```
+
 New tagged releases also provide standalone macOS and Linux executables that
 do not require Python. Node.js users can run the matching native executable
 through npm:
