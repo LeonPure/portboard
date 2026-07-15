@@ -31,11 +31,36 @@ protected `main` branch and use the protected `v*` tag namespace.
    ```
 
 6. Approve the protected `pypi` and `npm` environments in GitHub Actions.
+7. After the GitHub release succeeds, request a Homebrew formula update:
+
+   ```bash
+   gh workflow run update-portboard.yml \
+     --repo LeonPure/homebrew-tap \
+     -f tag=v0.1.0a2
+   ```
+
+   Open the pull request from the update branch link in the workflow summary,
+   wait for all four platform checks, review it, and merge it. The tap's
+   protected `main` branch does not accept direct pushes.
 
 The workflow verifies the tag against the Python package version and verifies
 that the tagged commit belongs to `main`. It builds wheels and source archives,
-four native executables, five npm packages, and a checksum manifest. Prerelease
-npm versions use the `next` dist-tag; stable versions use `latest`.
+four native executables, four Homebrew archives, five npm packages, and a
+checksum manifest. Prerelease npm versions use the `next` dist-tag; stable
+versions use `latest`.
+
+## Homebrew tap
+
+The `LeonPure/homebrew-tap` repository publishes the `portboard` formula. Its
+manual update workflow accepts an existing PortBoard tag, verifies the release
+archives against `SHA256SUMS`, and updates the formula on a release branch. The
+repository owner opens the resulting pull request from the workflow summary.
+The workflow uses only the tap repository's short-lived `GITHUB_TOKEN`; there
+is no cross-repository secret.
+
+Release archives must exist for `darwin-arm64`, `darwin-x64`, `linux-arm64`,
+and `linux-x64`. The formula pull request must be reviewed and merged by the
+repository owner before `brew update` can deliver it.
 
 ## First npm publication
 
