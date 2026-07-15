@@ -116,6 +116,24 @@ Node.js:
 brew install LeonPure/tap/portboard
 ```
 
+Or install directly from the latest stable GitHub Release. Until the first
+stable release, the installer falls back to the newest prerelease:
+
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf \
+  https://raw.githubusercontent.com/LeonPure/portboard/main/install.sh | sh
+```
+
+The installer detects macOS/Linux and arm64/x64, verifies the release archive
+against `SHA256SUMS`, and installs to `~/.local/bin`. Pin a version or choose a
+different directory with environment variables:
+
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf \
+  https://raw.githubusercontent.com/LeonPure/portboard/main/install.sh | \
+  PORTBOARD_VERSION=0.1.0a2 PORTBOARD_INSTALL_DIR="$HOME/bin" sh
+```
+
 New tagged releases also provide standalone macOS and Linux executables that
 do not require Python. Node.js users can run the matching native executable
 through npm:
