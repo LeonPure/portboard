@@ -6,6 +6,11 @@ versions.
 
 ## [Unreleased]
 
+### Added
+
+- Package standalone executables for distribution through the official
+  `LeonPure/tap` Homebrew tap.
+
 ## [0.1.0a2] - 2026-07-14
 
 ### Added

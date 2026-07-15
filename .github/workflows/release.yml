@@ -139,6 +139,14 @@ jobs:
           pattern: standalone-*
           path: dist/release
           merge-multiple: true
+      - name: Package Homebrew archives
+        working-directory: dist/release
+        shell: bash
+        run: |
+          for target in darwin-arm64 darwin-x64 linux-arm64 linux-x64; do
+            chmod 755 "portboard-${target}"
+            tar -czf "portboard-${target}.tar.gz" "portboard-${target}"
+          done
       - name: Generate checksums
         working-directory: dist/release
         run: sha256sum * > SHA256SUMS
