@@ -62,6 +62,15 @@ Release archives must exist for `darwin-arm64`, `darwin-x64`, `linux-arm64`,
 and `linux-x64`. The formula pull request must be reviewed and merged by the
 repository owner before `brew update` can deliver it.
 
+## Shell installer
+
+The protected `main` branch publishes `install.sh` through GitHub's raw-content
+endpoint. The installer selects the latest stable GitHub Release, falling back
+to the newest prerelease only while no stable release exists. It downloads the
+same platform archives used by Homebrew and refuses installation unless the
+archive matches the release's `SHA256SUMS` entry. No separate installer
+publication or credential is required.
+
 ## First npm publication
 
 npm trusted publishing can only be configured after each package exists. The
