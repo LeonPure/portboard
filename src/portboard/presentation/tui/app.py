@@ -133,7 +133,7 @@ class PortBoardApp(App[None]):
 
         worker = self._refresh_worker
         self._refresh_worker = None
-        self.query_one("#loading", Horizontal).display = False
+        self._set_initial_loading(False)
         if event.state is WorkerState.SUCCESS and worker.result is not None:
             self._state.snapshot = worker.result
             self._render_services()
@@ -233,7 +233,7 @@ class PortBoardApp(App[None]):
             self._refresh_pending = True
             return
         if self._state.snapshot is None:
-            self.query_one("#loading", Horizontal).display = True
+            self._set_initial_loading(True)
             refresh_message = "Scanning local ports and checking services…"
         else:
             refresh_message = "Refreshing local services…"
@@ -245,6 +245,11 @@ class PortBoardApp(App[None]):
             exit_on_error=False,
             thread=True,
         )
+
+    def _set_initial_loading(self, visible: bool) -> None:
+        """Update the loading banner if the dashboard is still mounted."""
+        for loading in self.query("#loading"):
+            loading.display = visible
 
     def _render_services(self) -> None:
         snapshot = self._state.snapshot

@@ -266,6 +266,19 @@ def test_refresh_runs_in_background_and_coalesces_repeated_requests() -> None:
     asyncio.run(exercise())
 
 
+def test_refresh_completion_tolerates_an_unmounted_loading_banner() -> None:
+    async def exercise() -> None:
+        app = PortBoardApp(discover=FakeDiscoverServices(), actions=FakeActions())
+
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            await app.query_one("#loading").remove()
+
+            app._set_initial_loading(False)
+
+    asyncio.run(exercise())
+
+
 def test_enter_opens_details_for_the_keyboard_selected_service() -> None:
     async def exercise() -> None:
         app = PortBoardApp(
