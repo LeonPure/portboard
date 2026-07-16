@@ -31,7 +31,8 @@
   ],
   "os": [
     "darwin",
-    "linux"
+    "linux",
+    "win32"
   ],
   "engines": {
     "node": ">=18"
@@ -40,7 +41,9 @@
     "@leonpure/portboard-darwin-arm64": "0.1.0-alpha.2",
     "@leonpure/portboard-darwin-x64": "0.1.0-alpha.2",
     "@leonpure/portboard-linux-arm64": "0.1.0-alpha.2",
-    "@leonpure/portboard-linux-x64": "0.1.0-alpha.2"
+    "@leonpure/portboard-linux-x64": "0.1.0-alpha.2",
+    "@leonpure/portboard-win32-arm64": "0.1.0-alpha.2",
+    "@leonpure/portboard-win32-x64": "0.1.0-alpha.2"
   },
   "scripts": {
     "test": "node --test test/*.test.js"

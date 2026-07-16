@@ -12,7 +12,7 @@ Tests are organized by purpose: `tests/unit/` for isolated behavior with fakes, 
 - `uv run portboard --json`: run the current local-service discovery workflow.
 - `uv run ruff check .`: run the configured lint checks.
 - `uv run mypy`: run static type checking.
-- `uv run pytest`: execute the complete test suite.
+- `uv run pytest`: execute the complete test suite on macOS, Linux, or Windows.
 - `uv run pytest tests/unit/test_discover.py`: run one focused test module.
 - `uv build`: build source and wheel distributions through Hatchling.
 
@@ -26,7 +26,7 @@ Use pytest and name files `test_*.py` and tests `test_<behavior>`. Add determini
 
 ## Commit & Pull Request Guidelines
 
-Follow Conventional Commits, as in `feat: add JSON local service discovery`. Use an imperative, focused subject under 72 characters and keep each commit to one logical change. Pull requests should explain intent, architecture impact, and validation commands; link relevant issues. Include representative JSON output for schema changes and screenshots for future TUI changes. Call out macOS/Linux-specific behavior and never commit credentials, virtual environments, caches, or captured process data.
+Follow Conventional Commits, as in `feat: add JSON local service discovery`. Use an imperative, focused subject under 72 characters and keep each commit to one logical change. Pull requests should explain intent, architecture impact, and validation commands; link relevant issues. Include representative JSON output for schema changes and screenshots for future TUI changes. Call out macOS/Linux/Windows-specific behavior and never commit credentials, virtual environments, caches, or captured process data.
 
 ## Branching & Release Workflow
 

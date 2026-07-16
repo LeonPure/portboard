@@ -56,7 +56,7 @@ Releases are intentionally manual. The owner selects a release point, updates
 the version and changelog on `develop`, merges `develop` into `main` through a
 release pull request, and creates the matching protected `v*` tag. Only commits
 already contained in `main` can be published. The protected release workflow
-builds PyPI distributions, native macOS/Linux executables, and npm packages.
+builds PyPI distributions, native macOS/Linux/Windows executables, and npm packages.
 PyPI and npm publishing each use an owner-approved GitHub environment.
 
 The Python version and all npm package versions must be updated together. PEP
@@ -69,7 +69,7 @@ owner release checklist and npm trusted-publishing bootstrap.
 - Treat the JSON schema as a versioned public contract.
 - Preserve partial results when optional integrations or metadata are unavailable.
 - Keep process termination behind explicit confirmation and identity revalidation.
-- Call out macOS- or Linux-specific behavior in the pull request.
+- Call out macOS-, Linux-, or Windows-specific behavior in the pull request.
 
 Please report security vulnerabilities privately as described in
 [SECURITY.md](./SECURITY.md), not in a public issue.

@@ -9,7 +9,7 @@ import webbrowser
 
 
 class SystemDesktopController:
-    """Use standard macOS and Linux desktop tools when they are available."""
+    """Use standard desktop integrations for the current operating system."""
 
     def open_url(self, url: str) -> None:
         """Open a URL in the configured default browser."""
@@ -23,9 +23,11 @@ class SystemDesktopController:
 
 
 def _clipboard_command() -> list[str]:
-    """Return the first supported clipboard command for macOS or Linux."""
+    """Return the native or first available clipboard command."""
     if sys.platform == "darwin":
         return ["pbcopy"]
+    if sys.platform == "win32":
+        return ["clip.exe"]
     if shutil.which("wl-copy"):
         return ["wl-copy"]
     if shutil.which("xclip"):

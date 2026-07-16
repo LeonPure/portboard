@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest, windows-11-arm]
         python-version: ["3.11", "3.13"]
     runs-on: ${{ matrix.os }}
     steps:
@@ -28,9 +28,14 @@ jobs:
         run: npm test --prefix packaging/npm/portboard
       - name: Build and verify standalone executable
         if: matrix.python-version == '3.11'
+        shell: bash
         run: |
           uv run pyinstaller --clean --noconfirm \
             --distpath build/standalone-dist \
             --workpath build/pyinstaller \
             packaging/pyinstaller/portboard.spec
-          build/standalone-dist/portboard --version
+          if [[ "${RUNNER_OS}" == "Windows" ]]; then
+            build/standalone-dist/portboard.exe --version
+          else
+            build/standalone-dist/portboard --version
+          fi

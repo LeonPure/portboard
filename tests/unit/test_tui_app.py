@@ -239,6 +239,12 @@ def test_refresh_runs_in_background_and_coalesces_repeated_requests() -> None:
                 if discover.started.is_set():
                     break
             assert discover.started.is_set()
+            table = app.query_one("#services", DataTable)
+            assert app.query_one("#loading").display is True
+            assert (
+                str(app.query_one("#status", Static).render())
+                == "Scanning local ports and checking services…"
+            )
 
             app.action_focus_filter()
             await pilot.pause()
@@ -254,7 +260,21 @@ def test_refresh_runs_in_background_and_coalesces_repeated_requests() -> None:
                     break
 
             assert discover.calls == 2
-            assert app.query_one("#services", DataTable).row_count == 2
+            assert app.query_one("#loading").display is False
+            assert table.row_count == 2
+
+    asyncio.run(exercise())
+
+
+def test_refresh_completion_tolerates_an_unmounted_loading_banner() -> None:
+    async def exercise() -> None:
+        app = PortBoardApp(discover=FakeDiscoverServices(), actions=FakeActions())
+
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            await app.query_one("#loading").remove()
+
+            app._set_initial_loading(False)
 
     asyncio.run(exercise())
 

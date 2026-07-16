@@ -7,7 +7,8 @@ from typing import Literal, Protocol
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.widgets import DataTable, Header, Input, Static
+from textual.containers import Horizontal
+from textual.widgets import DataTable, Header, Input, LoadingIndicator, Static
 from textual.worker import Worker, WorkerState
 
 from portboard.application.actions import ActionResult, ServiceActions
@@ -94,6 +95,11 @@ class PortBoardApp(App[None]):
             placeholder="Filter by project, port, process, command, or address",
             id="filter",
         )
+        yield Horizontal(
+            LoadingIndicator(),
+            Static("Scanning local ports and checking services…", id="loading-message"),
+            id="loading",
+        )
         yield KeyboardServiceTable(id="services", cell_padding=0)
         yield Static(id="status")
         yield ShortcutFooter(id="shortcuts")
@@ -127,6 +133,7 @@ class PortBoardApp(App[None]):
 
         worker = self._refresh_worker
         self._refresh_worker = None
+        self._set_initial_loading(False)
         if event.state is WorkerState.SUCCESS and worker.result is not None:
             self._state.snapshot = worker.result
             self._render_services()
@@ -225,7 +232,12 @@ class PortBoardApp(App[None]):
         if self._refresh_worker is not None and not self._refresh_worker.is_finished:
             self._refresh_pending = True
             return
-        self.query_one("#status", Static).update("Refreshing local services…")
+        if self._state.snapshot is None:
+            self._set_initial_loading(True)
+            refresh_message = "Scanning local ports and checking services…"
+        else:
+            refresh_message = "Refreshing local services…"
+        self.query_one("#status", Static).update(refresh_message)
         self._refresh_worker = self.run_worker(
             self._discover.execute,
             name="service-discovery",
@@ -233,6 +245,11 @@ class PortBoardApp(App[None]):
             exit_on_error=False,
             thread=True,
         )
+
+    def _set_initial_loading(self, visible: bool) -> None:
+        """Update the loading banner if the dashboard is still mounted."""
+        for loading in self.query("#loading"):
+            loading.display = visible
 
     def _render_services(self) -> None:
         snapshot = self._state.snapshot

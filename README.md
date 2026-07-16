@@ -69,7 +69,7 @@ JSON 会报告可见的 TCP 监听器、尽力获取的进程信息、最近的 
 - 识别 HTTP 服务并检查健康状态。
 - 在 Docker 可用时显示端口映射。
 - 复制或打开服务 URL，并停止不再需要的进程。
-- 在 macOS 和 Linux 上提供实时终端界面。
+- 在 macOS、Linux 和 Windows 上提供实时终端界面。
 
 ## 为什么选择 PortBoard？
 
@@ -86,6 +86,8 @@ curl -fsSL https://raw.githubusercontent.com/LeonPure/portboard/main/install.sh 
 ```
 
 安装器会识别 macOS/Linux 和 arm64/x64，使用 `SHA256SUMS` 校验发布归档，并默认安装到 `~/.local/bin`。如果尚无稳定版本，会自动使用最新的预发布版本。
+
+该 shell 安装器面向 macOS 和 Linux。Windows 用户可以使用下方的 `uvx` 或 `npx`，其中 npm 发行版会根据设备自动安装原生 x64 或 ARM64 `.exe`。
 
 ### Homebrew
 
@@ -121,7 +123,7 @@ npx @leonpure/portboard
 npm install -g @leonpure/portboard
 ```
 
-npm 发行版支持 macOS 15+ 和兼容 Ubuntu 22.04 的 Linux 系统上的 arm64 与 x64。较旧的受支持系统仍可使用 Python 发行版。
+npm 发行版支持 macOS 15+、兼容 Ubuntu 22.04 的 Linux 和 Windows 上的 arm64 与 x64。其他受支持环境仍可使用 Python 发行版；不支持 32 位 Windows x86。
 
 ## 开发
 
@@ -143,7 +145,7 @@ uv run pytest
 uv build
 ```
 
-CI 会在 macOS 和 Linux 上使用 Python 3.11 与 3.13 执行相同检查。
+CI 会在 macOS、Linux 和 Windows 上使用 Python 3.11 与 3.13 执行相同检查。
 
 ## 路线图
 

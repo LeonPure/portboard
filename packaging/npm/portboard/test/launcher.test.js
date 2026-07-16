@@ -11,12 +11,14 @@ test("selects the package for every supported platform", () => {
   assert.equal(packageFor("darwin", "x64"), "@leonpure/portboard-darwin-x64");
   assert.equal(packageFor("linux", "arm64"), "@leonpure/portboard-linux-arm64");
   assert.equal(packageFor("linux", "x64"), "@leonpure/portboard-linux-x64");
+  assert.equal(packageFor("win32", "arm64"), "@leonpure/portboard-win32-arm64");
+  assert.equal(packageFor("win32", "x64"), "@leonpure/portboard-win32-x64");
 });
 
 test("rejects unsupported platforms with an actionable message", () => {
   assert.throws(
-    () => packageFor("win32", "x64"),
-    /does not provide a standalone binary for win32-x64/
+    () => packageFor("win32", "ia32"),
+    /does not provide a standalone binary for win32-ia32/
   );
 });
 
@@ -31,6 +33,19 @@ test("resolves the native executable beside the platform manifest", () => {
   });
 
   assert.equal(binary, path.join("packages", "darwin-arm64", "bin", "portboard"));
+});
+
+test("resolves the executable suffix for Windows", () => {
+  const binary = resolveBinary({
+    platform: "win32",
+    arch: "x64",
+    resolvePackage: (request) => {
+      assert.equal(request, "@leonpure/portboard-win32-x64/package.json");
+      return path.join("", "packages", "win32-x64", "package.json");
+    },
+  });
+
+  assert.equal(binary, path.join("packages", "win32-x64", "bin", "portboard.exe"));
 });
 
 test("passes arguments and terminal streams to the native executable", () => {

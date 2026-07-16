@@ -8,6 +8,9 @@ versions.
 
 ### Added
 
+- Support Windows in the Python distribution and provide standalone x64 and
+  ARM64 executables through GitHub Releases and npm.
+- Show an explicit loading indicator while the dashboard performs its initial scan.
 - Package standalone executables for distribution through the official
   `LeonPure/tap` Homebrew tap.
 - Provide a checksum-verifying shell installer for direct GitHub Release

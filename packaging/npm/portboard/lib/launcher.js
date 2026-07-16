@@ -8,6 +8,8 @@ const PLATFORM_PACKAGES = Object.freeze({
   "darwin-x64": "@leonpure/portboard-darwin-x64",
   "linux-arm64": "@leonpure/portboard-linux-arm64",
   "linux-x64": "@leonpure/portboard-linux-x64",
+  "win32-arm64": "@leonpure/portboard-win32-arm64",
+  "win32-x64": "@leonpure/portboard-win32-x64",
 });
 
 function packageFor(platform = process.platform, arch = process.arch) {
@@ -16,7 +18,7 @@ function packageFor(platform = process.platform, arch = process.arch) {
   if (packageName === undefined) {
     throw new Error(
       `PortBoard does not provide a standalone binary for ${target}. ` +
-        "Supported targets are macOS and Linux on arm64 or x64."
+        "Supported targets are macOS, Linux, and Windows on arm64 or x64."
     );
   }
   return packageName;
@@ -40,7 +42,8 @@ function resolveBinary(options = {}) {
     throw missingPackage;
   }
 
-  return path.join(path.dirname(manifest), "bin", "portboard");
+  const executable = platform === "win32" ? "portboard.exe" : "portboard";
+  return path.join(path.dirname(manifest), "bin", executable);
 }
 
 function main(options = {}) {
