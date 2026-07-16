@@ -6,7 +6,7 @@ This roadmap describes the current direction, not a promise of release dates.
 
 Status: implemented in the current alpha.
 
-- Discover TCP listeners on macOS and Linux.
+- Discover TCP listeners on macOS, Linux, and Windows.
 - Associate ports with processes, commands, and working directories.
 - Detect the nearest Git repository.
 - Render a live, keyboard-driven terminal table.

@@ -6,8 +6,13 @@ versions.
 
 ## [Unreleased]
 
+## [0.1.0a3] - 2026-07-16
+
 ### Added
 
+- Support Windows in the Python distribution and provide standalone x64 and
+  ARM64 executables through GitHub Releases and npm.
+- Show an explicit loading indicator while the dashboard performs its initial scan.
 - Package standalone executables for distribution through the official
   `LeonPure/tap` Homebrew tap.
 - Provide a checksum-verifying shell installer for direct GitHub Release
@@ -40,6 +45,7 @@ versions.
 - Require explicit confirmation and process creation-time validation before
   terminating a process.
 
-[Unreleased]: https://github.com/LeonPure/portboard/compare/v0.1.0a2...HEAD
+[Unreleased]: https://github.com/LeonPure/portboard/compare/v0.1.0a3...HEAD
+[0.1.0a3]: https://github.com/LeonPure/portboard/compare/v0.1.0a2...v0.1.0a3
 [0.1.0a2]: https://github.com/LeonPure/portboard/compare/v0.1.0a1...v0.1.0a2
 [0.1.0a1]: https://github.com/LeonPure/portboard/releases/tag/v0.1.0a1

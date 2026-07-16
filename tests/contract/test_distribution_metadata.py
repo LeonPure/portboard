@@ -10,7 +10,16 @@ from portboard import __version__
 
 PROJECT_ROOT = Path(__file__).parents[2]
 NPM_ROOT = PROJECT_ROOT / "packaging" / "npm"
-TARGETS = ("darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64")
+CI_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "ci.yml"
+RELEASE_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "release.yml"
+TARGETS = (
+    "darwin-arm64",
+    "darwin-x64",
+    "linux-arm64",
+    "linux-x64",
+    "win32-arm64",
+    "win32-x64",
+)
 
 
 def test_npm_packages_match_the_python_release_version() -> None:
@@ -18,6 +27,7 @@ def test_npm_packages_match_the_python_release_version() -> None:
     launcher = _package_json(NPM_ROOT / "portboard" / "package.json")
 
     assert launcher["version"] == npm_version
+    assert launcher["os"] == ["darwin", "linux", "win32"]
     assert launcher["optionalDependencies"] == {
         f"@leonpure/portboard-{target}": npm_version for target in TARGETS
     }
@@ -35,6 +45,18 @@ def test_npm_platform_constraints_match_the_package_names() -> None:
 
         assert package["os"] == [operating_system]
         assert package["cpu"] == [architecture]
+
+
+def test_ci_and_release_workflows_cover_windows() -> None:
+    ci_workflow = CI_WORKFLOW.read_text(encoding="utf-8")
+    release_workflow = RELEASE_WORKFLOW.read_text(encoding="utf-8")
+
+    assert "windows-latest" in ci_workflow
+    assert "windows-11-arm" in ci_workflow
+    for target in ("win32-arm64", "win32-x64"):
+        assert f"target: {target}" in release_workflow
+    assert "for target in win32-arm64 win32-x64" in release_workflow
+    assert 'zip "portboard-${target}.zip" "portboard-${target}.exe"' in release_workflow
 
 
 def _package_json(path: Path) -> dict[str, object]:

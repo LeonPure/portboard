@@ -1,14 +1,14 @@
 {
-  "name": "@leonpure/portboard-linux-x64",
+  "name": "@leonpure/portboard-win32-x64",
   "version": "0.1.0-alpha.3",
-  "description": "PortBoard native executable for Linux x64",
+  "description": "PortBoard native executable for Windows x64",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/LeonPure/portboard.git",
-    "directory": "packaging/npm/platforms/linux-x64"
+    "directory": "packaging/npm/platforms/win32-x64"
   },
-  "os": ["linux"],
+  "os": ["win32"],
   "cpu": ["x64"],
   "files": ["bin", "README.md"],
   "publishConfig": {

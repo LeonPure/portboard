@@ -1,7 +1,8 @@
 # PortBoard for npm
 
-This package installs the native PortBoard executable for macOS or Linux. It
-does not install Python and does not modify an existing Python environment.
+This package installs the native PortBoard executable for macOS, Linux, or
+Windows. It does not install Python and does not modify an existing Python
+environment.
 
 ```bash
 npx @leonpure/portboard

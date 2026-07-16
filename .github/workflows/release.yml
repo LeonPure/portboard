@@ -46,12 +46,22 @@ jobs:
         include:
           - runner: macos-15
             target: darwin-arm64
+            executable: portboard
           - runner: macos-15-intel
             target: darwin-x64
+            executable: portboard
           - runner: ubuntu-22.04-arm
             target: linux-arm64
+            executable: portboard
           - runner: ubuntu-22.04
             target: linux-x64
+            executable: portboard
+          - runner: windows-2022
+            target: win32-x64
+            executable: portboard.exe
+          - runner: windows-11-arm
+            target: win32-arm64
+            executable: portboard.exe
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
@@ -67,12 +77,17 @@ jobs:
       - name: Name and verify executable
         shell: bash
         run: |
-          mv dist/portboard "dist/portboard-${{ matrix.target }}"
-          "dist/portboard-${{ matrix.target }}" --version
+          suffix=""
+          if [[ "${{ matrix.executable }}" == *.exe ]]; then
+            suffix=".exe"
+          fi
+          artifact="dist/portboard-${{ matrix.target }}${suffix}"
+          mv "dist/${{ matrix.executable }}" "${artifact}"
+          "${artifact}" --version
       - uses: actions/upload-artifact@v4
         with:
           name: standalone-${{ matrix.target }}
-          path: dist/portboard-${{ matrix.target }}
+          path: dist/portboard-${{ matrix.target }}*
           if-no-files-found: error
 
   package-npm:
@@ -101,6 +116,13 @@ jobs:
             cp packaging/npm/platforms/README.md "${package}/README.md"
             cp LICENSE "${package}/LICENSE"
           done
+          for target in win32-arm64 win32-x64; do
+            package="packaging/npm/platforms/${target}"
+            mkdir -p "${package}/bin"
+            install -m 755 "dist/standalone/portboard-${target}.exe" "${package}/bin/portboard.exe"
+            cp packaging/npm/platforms/README.md "${package}/README.md"
+            cp LICENSE "${package}/LICENSE"
+          done
           cp LICENSE packaging/npm/portboard/LICENSE
       - name: Test npm launcher
         run: npm test --prefix packaging/npm/portboard
@@ -113,7 +135,7 @@ jobs:
       - name: Pack npm distributions
         run: |
           mkdir -p dist/npm
-          for target in darwin-arm64 darwin-x64 linux-arm64 linux-x64; do
+          for target in darwin-arm64 darwin-x64 linux-arm64 linux-x64 win32-arm64 win32-x64; do
             npm pack "packaging/npm/platforms/${target}" --pack-destination dist/npm
           done
           npm pack packaging/npm/portboard --pack-destination dist/npm
@@ -146,6 +168,9 @@ jobs:
           for target in darwin-arm64 darwin-x64 linux-arm64 linux-x64; do
             chmod 755 "portboard-${target}"
             tar -czf "portboard-${target}.tar.gz" "portboard-${target}"
+          done
+          for target in win32-arm64 win32-x64; do
+            zip "portboard-${target}.zip" "portboard-${target}.exe"
           done
       - name: Generate checksums
         working-directory: dist/release
@@ -225,7 +250,7 @@ jobs:
             fi
           }
 
-          for target in darwin-arm64 darwin-x64 linux-arm64 linux-x64; do
+          for target in darwin-arm64 darwin-x64 linux-arm64 linux-x64 win32-arm64 win32-x64; do
             publish_if_missing \
               "@leonpure/portboard-${target}" \
               "dist/npm/leonpure-portboard-${target}-${npm_version}.tgz"

@@ -3,11 +3,19 @@ from __future__ import annotations
 import hashlib
 import os
 import subprocess
+import sys
 import tarfile
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).parents[2]
 INSTALLER = ROOT / "install.sh"
+
+pytestmark = pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="the curl installer targets POSIX systems; Windows uses uv or npm",
+)
 
 
 def _fake_release(tmp_path: Path, *, version: str = "9.8.7") -> tuple[Path, Path]:

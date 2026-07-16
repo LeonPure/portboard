@@ -7,7 +7,7 @@ protected `main` branch and use the protected `v*` tag namespace.
 
 1. On `develop`, update the Python version in `pyproject.toml` and
    `src/portboard/__init__.py`.
-2. Update the five npm `package.json` files under `packaging/npm/`. Python PEP
+2. Update all seven npm `package.json` files under `packaging/npm/`. Python PEP
    440 prereleases map to npm SemVer: `0.1.0a2` becomes `0.1.0-alpha.2`, `b1`
    becomes `beta.1`, and `rc1` stays `rc.1`.
 3. Move the release notes out of the changelog's `Unreleased` section and run:
@@ -45,7 +45,7 @@ protected `main` branch and use the protected `v*` tag namespace.
 
 The workflow verifies the tag against the Python package version and verifies
 that the tagged commit belongs to `main`. It builds wheels and source archives,
-four native executables, four Homebrew archives, five npm packages, and a
+six native executables, four Homebrew archives, seven npm packages, and a
 checksum manifest. Prerelease npm versions use the `next` dist-tag; stable
 versions use `latest`.
 
@@ -71,10 +71,11 @@ same platform archives used by Homebrew and refuses installation unless the
 archive matches the release's `SHA256SUMS` entry. No separate installer
 publication or credential is required.
 
-## First npm publication
+## First npm publication or new platform package
 
 npm trusted publishing can only be configured after each package exists. The
-first npm release therefore needs a short-lived granular npm access token:
+first npm release, and the first release of any newly added platform package,
+therefore needs a short-lived granular npm access token:
 
 1. Create or sign in to the npm account that owns the `@leonpure` scope and
    enable two-factor authentication.
@@ -82,8 +83,8 @@ first npm release therefore needs a short-lived granular npm access token:
    scope, then add it temporarily as the `NPM_TOKEN` secret of the protected
    GitHub `npm` environment.
 3. Run the normal tag release and approve the `npm` environment. The workflow
-   publishes the four platform packages before `@leonpure/portboard`.
-4. For each of the five packages on npmjs.com, configure a GitHub Actions
+   publishes the six platform packages before `@leonpure/portboard`.
+4. For every newly created package on npmjs.com, configure a GitHub Actions
    trusted publisher with these exact values:
 
    - Organization or user: `LeonPure`
