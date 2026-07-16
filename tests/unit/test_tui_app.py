@@ -266,15 +266,40 @@ def test_refresh_runs_in_background_and_coalesces_repeated_requests() -> None:
     asyncio.run(exercise())
 
 
-def test_refresh_completion_tolerates_an_unmounted_loading_banner() -> None:
+def test_refresh_completion_tolerates_an_unmounted_dashboard() -> None:
+    class BlockingDiscoverServices(FakeDiscoverServices):
+        def __init__(self) -> None:
+            self.started = Event()
+            self.release = Event()
+
+        def execute(self) -> ServiceSnapshot:
+            self.started.set()
+            self.release.wait(timeout=2)
+            return super().execute()
+
     async def exercise() -> None:
-        app = PortBoardApp(discover=FakeDiscoverServices(), actions=FakeActions())
+        discover = BlockingDiscoverServices()
+        app = PortBoardApp(discover=discover, actions=FakeActions())
 
         async with app.run_test() as pilot:
-            await pilot.pause()
-            await app.query_one("#loading").remove()
+            for _ in range(20):
+                await pilot.pause()
+                if discover.started.is_set():
+                    break
+            assert discover.started.is_set()
 
-            app._set_initial_loading(False)
+            await app.query_one("#loading").remove()
+            await app.query_one("#services").remove()
+            await app.query_one("#status").remove()
+            discover.release.set()
+
+            for _ in range(40):
+                await pilot.pause()
+                if app._refresh_worker is None:
+                    break
+
+            assert app._refresh_worker is None
+            assert app._state.snapshot is not None
 
     asyncio.run(exercise())
 

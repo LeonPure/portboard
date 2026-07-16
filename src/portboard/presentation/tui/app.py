@@ -134,17 +134,20 @@ class PortBoardApp(App[None]):
         worker = self._refresh_worker
         self._refresh_worker = None
         self._set_initial_loading(False)
+        dashboard_mounted = self._dashboard_is_mounted()
         if event.state is WorkerState.SUCCESS and worker.result is not None:
             self._state.snapshot = worker.result
-            self._render_services()
-        else:
+            if dashboard_mounted:
+                self._render_services()
+        elif dashboard_mounted:
             self.query_one("#status", Static).update(
                 f"Refresh failed: {worker.error or 'unknown error'}"
             )
 
         if self._refresh_pending:
             self._refresh_pending = False
-            self._request_refresh()
+            if dashboard_mounted:
+                self._request_refresh()
 
     def action_refresh(self) -> None:
         self._request_refresh()
@@ -250,6 +253,10 @@ class PortBoardApp(App[None]):
         """Update the loading banner if the dashboard is still mounted."""
         for loading in self.query("#loading"):
             loading.display = visible
+
+    def _dashboard_is_mounted(self) -> bool:
+        """Return whether refresh results can still be rendered safely."""
+        return any(True for _ in self.query("#services"))
 
     def _render_services(self) -> None:
         snapshot = self._state.snapshot
