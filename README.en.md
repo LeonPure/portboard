@@ -69,7 +69,7 @@ The current alpha can:
 - Detect HTTP services and check their health.
 - Display Docker port mappings when Docker is available.
 - Copy or open service URLs and stop unwanted processes.
-- Provide a live terminal UI on macOS and Linux.
+- Provide a live terminal UI on macOS, Linux, and Windows.
 
 ## Why PortBoard?
 
@@ -86,6 +86,8 @@ curl -fsSL https://raw.githubusercontent.com/LeonPure/portboard/main/install.sh 
 ```
 
 The installer detects macOS/Linux and arm64/x64, verifies the release archive against `SHA256SUMS`, and installs to `~/.local/bin`. Until the first stable release, it automatically uses the newest prerelease.
+
+This shell installer targets macOS and Linux. On Windows, use `uvx` or `npx` below; the npm distribution automatically installs the native x64 or ARM64 `.exe` for the device.
 
 ### Homebrew
 
@@ -121,7 +123,7 @@ Install globally:
 npm install -g @leonpure/portboard
 ```
 
-The npm distribution supports arm64 and x64 on macOS 15+ and Linux systems compatible with Ubuntu 22.04. Python installations remain available for older supported systems.
+The npm distribution supports arm64 and x64 on macOS 15+, Linux systems compatible with Ubuntu 22.04, and Windows. Python installations remain available for other supported environments; 32-bit Windows x86 is not supported.
 
 ## Development
 
@@ -143,7 +145,7 @@ uv run pytest
 uv build
 ```
 
-CI runs the same checks on macOS and Linux with Python 3.11 and 3.13.
+CI runs the same checks on macOS, Linux, and Windows with Python 3.11 and 3.13.
 
 ## Roadmap
 

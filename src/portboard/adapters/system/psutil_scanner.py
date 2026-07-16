@@ -26,7 +26,7 @@ class PsutilListenerScanner:
         return ListenerScan(listeners=_sort_listeners(listeners))
 
     def _scan_processes_after_global_failure(self, error: Exception) -> ListenerScan:
-        """Recover when one protected process aborts a global scan on macOS."""
+        """Recover when a protected process aborts a global socket scan."""
         listeners: set[Listener] = set()
         try:
             for process in psutil.process_iter():
