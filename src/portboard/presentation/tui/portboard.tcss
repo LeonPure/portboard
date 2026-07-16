@@ -2,6 +2,25 @@
     margin: 1 2 0 2;
 }
 
+#loading {
+    display: none;
+    height: 3;
+    margin: 1 2 0 2;
+    align: center middle;
+}
+
+#loading LoadingIndicator {
+    width: 5;
+    height: 1;
+}
+
+#loading-message {
+    width: auto;
+    height: 1;
+    color: $primary;
+    text-style: bold;
+}
+
 #services {
     height: 1fr;
     margin: 1 2;
