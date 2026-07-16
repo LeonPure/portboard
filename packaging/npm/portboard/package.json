@@ -1,6 +1,6 @@
 {
   "name": "@leonpure/portboard",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "description": "A terminal dashboard for local development services",
   "license": "MIT",
   "homepage": "https://github.com/LeonPure/portboard#readme",
@@ -38,12 +38,12 @@
     "node": ">=18"
   },
   "optionalDependencies": {
-    "@leonpure/portboard-darwin-arm64": "0.1.0-alpha.2",
-    "@leonpure/portboard-darwin-x64": "0.1.0-alpha.2",
-    "@leonpure/portboard-linux-arm64": "0.1.0-alpha.2",
-    "@leonpure/portboard-linux-x64": "0.1.0-alpha.2",
-    "@leonpure/portboard-win32-arm64": "0.1.0-alpha.2",
-    "@leonpure/portboard-win32-x64": "0.1.0-alpha.2"
+    "@leonpure/portboard-darwin-arm64": "0.1.0-alpha.3",
+    "@leonpure/portboard-darwin-x64": "0.1.0-alpha.3",
+    "@leonpure/portboard-linux-arm64": "0.1.0-alpha.3",
+    "@leonpure/portboard-linux-x64": "0.1.0-alpha.3",
+    "@leonpure/portboard-win32-arm64": "0.1.0-alpha.3",
+    "@leonpure/portboard-win32-x64": "0.1.0-alpha.3"
   },
   "scripts": {
     "test": "node --test test/*.test.js"

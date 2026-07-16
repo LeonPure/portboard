@@ -1,6 +1,6 @@
 {
   "name": "@leonpure/portboard-win32-arm64",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "description": "PortBoard native executable for Windows ARM64",
   "license": "MIT",
   "repository": {
